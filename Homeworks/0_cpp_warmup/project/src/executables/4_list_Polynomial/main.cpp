@@ -1,5 +1,4 @@
 #include "PolynomialList.h"
-
 #include <list>
 #include <iostream>
 
