@@ -11,17 +11,17 @@ DArray::DArray() {
 }
 
 // set an array with default values
-DArray::DArray(int nSize, double dValue) {
-	Init();
-	SetSize(nSize);
+DArray::DArray(int nSize, double dValue) 
+: m_pData(new double[nSize]), m_nSize(nSize), m_nMax(nSize)
+{
 	for (int i = 0; i < nSize; i++)
 		SetAt(i, dValue);
 }
 
-DArray::DArray(const DArray& arr) {
+DArray::DArray(const DArray& arr) 
+: m_pData(new double[arr.m_nSize]), m_nSize(arr.m_nSize), m_nMax(arr.m_nSize)
+{
 	//TODO
-	Init();
-	SetSize(arr.GetSize());
 	for (int i = 0; i < GetSize(); i++)
 		SetAt(i, arr.GetAt(i));
 }
@@ -34,9 +34,11 @@ DArray::~DArray() {
 // display the elements of the array
 void DArray::Print() const {
 	//TODO
-	const int nSize = GetSize();
-	for (int i = 0; i < nSize; i++)
+	std::cout << "size= " << m_nSize << ": ";
+	for (int i = 0; i < m_nSize; i++)
 		std::cout << GetAt(i) << " ";
+	
+	std::cout << std::endl;
 
 }
 
@@ -44,8 +46,8 @@ void DArray::Print() const {
 void DArray::Init() {
 	//TODO
 	m_nSize = 0;
-	m_nMax = ARRAY_MAX_ELEMENTS;
-	m_pData = new double[m_nMax];
+	m_nMax = 0;
+	m_pData = nullptr;
 
 }
 
@@ -56,6 +58,7 @@ void DArray::Free() {
 		m_pData = nullptr;
 	}
 	m_nSize = 0;
+	m_nMax = 0;
 
 }
 
@@ -79,7 +82,14 @@ void DArray::SetSize(int nSize) {
 	// 	std::cout << "Size is too small, use 0 instead";
 	// }
 
+	if (m_nSize == nSize)
+		return;
+
 	Reserve(nSize);
+
+	for (int i = m_nSize; i < nSize; i++){
+		m_pData[i] = 0.0;	
+	}
 	m_nSize = nSize;
 
 }
@@ -87,13 +97,8 @@ void DArray::SetSize(int nSize) {
 // get an element at an index
 const double& DArray::GetAt(int nIndex) const {
 	//TODO
-	if (nIndex < 0 || nIndex >= m_nSize)
-	{
-		throw std::out_of_range("Index is out of range");
-	}
-	else{
-		return m_pData[nIndex];
-	}
+	assert(nIndex >= 0 && nIndex < m_nSize);
+	return m_pData[nIndex];
 }
 
 // set the value of an element 
@@ -129,10 +134,8 @@ const double& DArray::operator[](int nIndex) const {
 // add a new element at the end of the array
 void DArray::PushBack(double dValue) {
 	//TODO
-	if (m_nSize == ARRAY_MAX_ELEMENTS){
-		std::cout << "Array is full";
-		return;
-	}
+	Reserve(m_nSize + 1);
+
 	m_pData[m_nSize] = dValue;
 	m_nSize++;
 
@@ -143,12 +146,9 @@ void DArray::PushBack(double dValue) {
 // delete an element at some index
 void DArray::DeleteAt(int nIndex) {
 	//TODO
-	if (nIndex < 0 || nIndex >= m_nSize){
-	throw std::out_of_range("Index is out of range");	
-	}
-	for (int i = nIndex; i < m_nSize - 1; i++){
-		m_pData[i] = m_pData[i + 1];
-	}
+	assert(nIndex >= 0 && nIndex < m_nSize);
+
+	memmove(m_pData + nIndex, m_pData + nIndex + 1, (m_nSize - nIndex - 1) * sizeof(double));
 	m_nSize--;
 	return;
 }
@@ -156,12 +156,10 @@ void DArray::DeleteAt(int nIndex) {
 // insert a new element at some index
 void DArray::InsertAt(int nIndex, double dValue) {
 	//TODO
-	if (nIndex < 0 || nIndex >m_nSize){
-	throw std::out_of_range("Index is out of range");	
-	}
-	if (m_nSize == ARRAY_MAX_ELEMENTS){
-	throw std::out_of_range("Array is full");	
-	}
+
+	assert(nIndex >= 0 && nIndex <= m_nSize);
+
+	Reserve(m_nSize + 1);
 
 	memmove(m_pData + nIndex + 1, m_pData + nIndex, (m_nSize - nIndex) * sizeof(double));
 
@@ -172,14 +170,10 @@ void DArray::InsertAt(int nIndex, double dValue) {
 // overload operator '='
 DArray& DArray::operator = (const DArray& arr) {
 	//TODO
-	if (this != &arr){
-		Free();
-		Init();
-		SetSize(arr.GetSize());
-		for (int i = 0; i < GetSize(); i++){
-			SetAt(i, arr.GetAt(i));
-		}	
-	}
+	Reserve(arr.m_nSize);
+
+	m_nSize = arr.m_nSize;
+	memcpy(m_pData, arr.m_pData, m_nSize * sizeof(double));
 	return *this;
 }
 
@@ -190,8 +184,12 @@ void DArray::Reserve(int nSize) {
         return;
     }
 
+	while(m_nMax < nSize){
+		m_nMax = m_nMax == 0 ? 1 : m_nMax * 2;
+	}
+
     // 分配新内存
-    double* pNewData = new double[nSize];
+    double* pNewData = new double[m_nMax];
 
     // 复制现有数据到新内存
     if (m_pData != nullptr) {
