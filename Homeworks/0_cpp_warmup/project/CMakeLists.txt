@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 3.27 FATAL_ERROR)
 
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
-set(CMAKE_MAKE_PROGRAM "D:/msys64/ucrt64/bin/mingw32-make.exe")
+
 # set compiler path
+set(CMAKE_MAKE_PROGRAM "D:/msys64/ucrt64/bin/mingw32-make.exe")
 set(CMAKE_CXX_COMPILER "D:/msys64/ucrt64/bin/g++.exe")
 set(CMAKE_C_COMPILER "D:/msys64/ucrt64/bin/gcc.exe")
 
