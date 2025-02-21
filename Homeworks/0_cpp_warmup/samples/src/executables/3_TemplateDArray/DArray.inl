@@ -1,7 +1,8 @@
+#pragma once
 #include <iostream>
 #include <assert.h>
+#include "DArray.h"
 
-// default constructor
 template<typename T>
 DArray<T>::DArray() {
 	Init();

@@ -1,49 +1,55 @@
-// implementation of class DArray
-
-#include "DArray.h"
+#pragma once
 #include <iostream>
 #include <assert.h>
+#include "DArray.h"
+
 
 #define ARRAY_MAX_ELEMENTS 15
 
 // default constructor
-DArray::DArray() {
+template<typename T>
+DArray<T>::DArray() {
 	Init();
 }
 
 // set an array with default values
-DArray::DArray(int nSize, double dValue) 
-: m_pData(new double[nSize]), m_nSize(nSize), m_nMax(nSize)
+template<typename T>
+DArray<T>::DArray(int nSize, T dValue)
+: m_pData(new T[nSize]), m_nSize(nSize), m_nMax(nSize)
 {
 	for (int i = 0; i < nSize; i++)
 		SetAt(i, dValue);
 }
 
-DArray::DArray(const DArray& arr) 
-: m_pData(new double[arr.m_nSize]), m_nSize(arr.m_nSize), m_nMax(arr.m_nSize)
+template<typename T>
+DArray<T>::DArray(const DArray<T>& arr)
+: m_pData(new T[arr.m_nSize]), m_nSize(arr.m_nSize), m_nMax(arr.m_nSize)
 {
 	for (int i = 0; i < arr.GetSize(); i++)
 		SetAt(i, arr.GetAt(i));
 }
 
 // deconstructor
-DArray::~DArray() {
+template<typename T>
+DArray<T>::~DArray() {
 	Free();
 }
 
 // display the elements of the array
-void DArray::Print() const {
+template<typename T>
+void DArray<T>::Print() const {
 	//TODO
 	std::cout << "size= " << m_nSize << ": ";
 	for (int i = 0; i < m_nSize; i++)
 		std::cout << GetAt(i) << " ";
-	
+
 	std::cout << std::endl;
 
 }
 
 // initialize the array
-void DArray::Init() {
+template<typename T>
+void DArray<T>::Init() {
 	//TODO
 	m_nSize = 0;
 	m_nMax = 0;
@@ -52,7 +58,8 @@ void DArray::Init() {
 }
 
 // free the array
-void DArray::Free() {
+template<typename T>
+void DArray<T>::Free() {
 	if (m_pData != nullptr){
 		delete[] m_pData;
 		m_pData = nullptr;
@@ -63,17 +70,19 @@ void DArray::Free() {
 }
 
 // get the size of the array
-int DArray::GetSize() const {
+template<typename T>
+int DArray<T>::GetSize() const {
 	//TODO
 	assert(m_nSize >= 0);
 	return m_nSize; // if you want to return a value, you should return a correct value
 }
 
 // set the size of the array
-void DArray::SetSize(int nSize) {
+template<typename T>
+void DArray<T>::SetSize(int nSize) {
 	//TODO
 	// if (nSize > ARRAY_MAX_ELEMENTS)
-	// {	
+	// {
 	// 	nSize = ARRAY_MAX_ELEMENTS;
 	// 	std::cout << "Size is too large, use ARRAY_MAX_ELEMENTS instead";
 	// }
@@ -88,25 +97,27 @@ void DArray::SetSize(int nSize) {
 	Reserve(nSize);
 
 	for (int i = m_nSize; i < nSize; i++){
-		m_pData[i] = 0.0;	
+		m_pData[i] = 0.0;
 	}
 	m_nSize = nSize;
 
 }
 
 // get an element at an index
-const double& DArray::GetAt(int nIndex) const {
+template<typename T>
+const T& DArray<T>::GetAt(int nIndex) const {
 	//TODO
 	assert(nIndex >= 0 && nIndex < m_nSize);
 	return m_pData[nIndex];
 }
 
-// set the value of an element 
-void DArray::SetAt(int nIndex, double dValue) {
+// set the value of an element
+template<typename T>
+void DArray<T>::SetAt(int nIndex, T dValue) {
 	//TODO
 	if (nIndex < 0 || nIndex >= m_nSize)
 	{
-        throw std::out_of_range("Index is out of range");
+		throw std::out_of_range("Index is out of range");
 	}
 	else{
 		m_pData[nIndex] = dValue;
@@ -114,7 +125,8 @@ void DArray::SetAt(int nIndex, double dValue) {
 }
 
 // overload operator '[]'
-double& DArray::operator[](int nIndex) {
+template<typename T>
+T& DArray<T>::operator[](int nIndex) {
 	// TODO
 	if (nIndex < 0 || nIndex >= m_nSize){
 		throw std::out_of_range("Index is out of range");
@@ -123,7 +135,8 @@ double& DArray::operator[](int nIndex) {
 }
 
 // overload operator '[]'
-const double& DArray::operator[](int nIndex) const {
+template<typename T>
+const T& DArray<T>::operator[](int nIndex) const {
 	//TODO
 	if (nIndex < 0 || nIndex >= m_nSize){
 		throw std::out_of_range("Index is out of range");
@@ -132,7 +145,8 @@ const double& DArray::operator[](int nIndex) const {
 }
 
 // add a new element at the end of the array
-void DArray::PushBack(double dValue) {
+template<typename T>
+void DArray<T>::PushBack(T dValue) {
 	//TODO
 	Reserve(m_nSize + 1);
 
@@ -144,60 +158,64 @@ void DArray::PushBack(double dValue) {
 }
 
 // delete an element at some index
-void DArray::DeleteAt(int nIndex) {
+template<typename T>
+void DArray<T>::DeleteAt(int nIndex) {
 	//TODO
 	assert(nIndex >= 0 && nIndex < m_nSize);
 
-	memmove(m_pData + nIndex, m_pData + nIndex + 1, (m_nSize - nIndex - 1) * sizeof(double));
+	memmove(m_pData + nIndex, m_pData + nIndex + 1, (m_nSize - nIndex - 1) * sizeof(T));
 	m_nSize--;
 	return;
 }
 
 // insert a new element at some index
-void DArray::InsertAt(int nIndex, double dValue) {
+template<typename T>
+void DArray<T>::InsertAt(int nIndex, T dValue) {
 	//TODO
 
 	assert(nIndex >= 0 && nIndex <= m_nSize);
 
 	Reserve(m_nSize + 1);
 
-	memmove(m_pData + nIndex + 1, m_pData + nIndex, (m_nSize - nIndex) * sizeof(double));
+	memmove(m_pData + nIndex + 1, m_pData + nIndex, (m_nSize - nIndex) * sizeof(T));
 
 	m_pData[nIndex] = dValue;
 	m_nSize++;
 }
 
 // overload operator '='
-DArray& DArray::operator = (const DArray& arr) {
+template<typename T>
+DArray<T>& DArray<T>::operator = (const DArray<T>& arr) {
 	//TODO
 	Reserve(arr.m_nSize);
 
 	m_nSize = arr.m_nSize;
-	memcpy(m_pData, arr.m_pData, m_nSize * sizeof(double));
+	memcpy(m_pData, arr.m_pData, m_nSize * sizeof(T));
 	return *this;
 }
 
 // 在DArray.cpp中实现Reserve函数
-void DArray::Reserve(int nSize) {
-    // 如果请求的大小小于等于当前容量，直接返回
-    if (nSize <= m_nMax) {
-        return;
-    }
+template<typename T>
+void DArray<T>::Reserve(int nSize) {
+	// 如果请求的大小小于等于当前容量，直接返回
+	if (nSize <= m_nMax) {
+		return;
+	}
 
 	while(m_nMax < nSize){
 		m_nMax = m_nMax == 0 ? 1 : m_nMax * 2;
 	}
 
-    // 分配新内存
-    double* pNewData = new double[m_nMax];
+	// 分配新内存
+	T* pNewData = new T[m_nMax];
 
-    // 复制现有数据到新内存
-    if (m_pData != nullptr) {
-        memmove(pNewData, m_pData, m_nSize * sizeof(double));
-        // 释放旧内存
-        delete[] m_pData;
-    }
+	// 复制现有数据到新内存
+	if (m_pData != nullptr) {
+		memmove(pNewData, m_pData, m_nSize * sizeof(T));
+		// 释放旧内存
+		delete[] m_pData;
+	}
 
-    // 更新指针和容量
-    m_pData = pNewData;
+	// 更新指针和容量
+	m_pData = pNewData;
 }

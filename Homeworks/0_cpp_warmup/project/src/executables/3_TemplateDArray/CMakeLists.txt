@@ -1,0 +1,1 @@
+set_target_properties(3_TemplateDArray PROPERTIES ${OUTPUT_PROP})
