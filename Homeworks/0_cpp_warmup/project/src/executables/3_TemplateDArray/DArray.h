@@ -36,3 +36,5 @@ private:
 	void Free(); // free the array
 	void Reserve(int nSize); // allocate enough memory
 };
+
+#include "DArray.inl"
