@@ -117,9 +117,16 @@ void PolynomialList::Print() const {
     bool first = true;
     for (const auto& term : m_Polynomial) {
             if (!first) std::cout << " ";
-
-            if (term.deg != 0 && std::abs(term.cof) != 1.0){ // 除非是常数项，否则不输出1
-                if (term.cof < 0) std::cout << term.cof; //系数为负， 直接输出
+            auto cof_abs = std::abs(term.cof);
+            if (term.deg != 0 && cof_abs != 1.0){ // 除非是常数项，否则不输出1
+                if (term.cof < 0) {
+                    if (!first) {
+                        std::cout << "- " << cof_abs;
+                    }
+                    else{
+                        std::cout << "-" << cof_abs;
+                    }
+                } 
                 else{
                     if (!first){ // 不是第一项的正系数，先输出加号
                         std::cout << "+ " << term.cof;

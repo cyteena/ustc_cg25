@@ -1,12 +1,23 @@
 #include "PolynomialList.h"
 #include <list>
 #include <iostream>
+#include <filesystem>
 
-using namespace std;
 
 int main(int argc, char** argv) {
-	PolynomialList p1("../data/P3.txt");
-	PolynomialList p2("../data/P4.txt");
+
+	std::cout << "Current Path: "<< std::filesystem::current_path() << std::endl;
+	std::string current_path = std::filesystem::current_path().string();
+	PolynomialList p1, p2;
+	if (current_path.substr(current_path.length() - 7) == "project"){
+		p1 = PolynomialList("./data/P3.txt");
+		p2 = PolynomialList("./data/P4.txt");
+	}
+	if (current_path.substr(current_path.length() - 3) == "bin"){
+		p1 = PolynomialList("../data/P3.txt");
+		p2 = PolynomialList("../data/P4.txt");
+	}
+	
 	PolynomialList p3;
 	p1.Print();
 	p2.Print();
