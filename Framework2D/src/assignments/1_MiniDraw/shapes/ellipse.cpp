@@ -33,6 +33,8 @@ void Ellipse::update(float x, float y)
         float dx = x - start_point_x_;
         float dy = y - start_point_y_;
         rotation_angle_ = atan2f(dy, dx);
+        radius_x_  = dx;
+        radius_y_  = dy;
     }
     else
     {
