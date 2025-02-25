@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "imgui.h"
+#include "shapes/ellipse.h"
 #include "shapes/line.h"
 #include "shapes/rect.h"
 
@@ -141,6 +142,12 @@ void Canvas::mouse_click_event()
                 break;
             }
             // HW1_TODO: case USTC_CG::Canvas::kEllipse:
+            case USTC_CG::Canvas::kEllipse:
+            {
+                current_shape_ = std::make_shared<Ellipse>(
+                    start_point_.x, start_point_.y);
+                break;
+            }
             default: break;
         }
     }
