@@ -22,13 +22,4 @@ class MiniDraw : public Window
 
     bool flag_show_canvas_view_ = true;
 };
-void MiniDraw::draw()
-{
-    // flag_show_canvas_common : bool type
-    if (ImGui::Begin("Canvas", &flag_show_canvas_view_))
-    {
-        ImGui::Text("This is a canvas window");
-    }
-    ImGui::End();
-}
 }  // namespace USTC_CG

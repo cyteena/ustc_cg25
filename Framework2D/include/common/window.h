@@ -16,13 +16,15 @@ class Window
     // Constructor that sets the window's title.
     explicit Window(const std::string& window_name);
 
-    virtual ~Window();
+    virtual ~Window(); // base method ~method must be virtual
 
     // Initializes the window and its dependencies (GLFW, GLAD, ImGui, etc.).
     bool init();
 
     // Enters the main rendering loop.
     void run();
+
+    //
 
    protected:
     // Virtual draw function to be implemented by derived classes for custom

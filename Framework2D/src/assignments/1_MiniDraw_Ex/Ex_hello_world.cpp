@@ -1,9 +1,19 @@
-#include <stdexcept>
 #include <imgui.h>
+
+#include <stdexcept>
 
 #include "common/window.h"
 #include "ex_window_mini_draw.h"
 
+void USTC_CG::MiniDraw::draw()
+{
+    // flag_show_canvas_common : bool type
+    if (ImGui::Begin("Canvas", &flag_show_canvas_view_))
+    {
+        ImGui::Text("This is a canvas window");
+    }
+    ImGui::End();
+}
 
 int main()
 {
