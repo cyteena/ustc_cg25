@@ -5,6 +5,7 @@
 
 #include "imgui.h"
 #include "shapes/ellipse.h"
+#include "shapes/freehand.h"
 #include "shapes/line.h"
 #include "shapes/polygon.h"
 #include "shapes/rect.h"
@@ -161,6 +162,17 @@ void Canvas::mouse_click_event()
                     start_point_.x, start_point_.y);
                 break;
             }
+            case USTC_CG::Canvas::kFreehand:
+            {
+                if (!current_shape_)
+                {
+                    current_shape_ = std::make_shared<Freehand>();
+                }
+                current_shape_->update(
+                    start_point_.x, start_point_.y
+                );
+                break;
+            }
             default: break;
         }
     }
@@ -223,7 +235,8 @@ void Canvas::mouse_move_event()
 void Canvas::mouse_release_event()
 {
     // HW1_TODO: Drawing rule for more primitives
-    if (draw_status_ && shape_type_ != kPolygon)
+    // 这个函数只完成了多边形下的右键填满操作
+    if (draw_status_ && (shape_type_ != kPolygon))
     {
         return;
     }
@@ -242,6 +255,7 @@ void Canvas::mouse_release_event()
             current_shape_.reset();
         }
     }
+
 }
 
 ImVec2 Canvas::mouse_pos_in_canvas() const
