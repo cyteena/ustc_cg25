@@ -5,8 +5,8 @@
 #include <memory>
 #include <vector>
 
-#include "shapes/shape.h"
 #include "common/widget.h"
+#include "shapes/shape.h"
 
 namespace USTC_CG
 {
@@ -50,6 +50,11 @@ class Canvas : public Widget
     // Controls the visibility of the canvas background.
     void show_background(bool flag);
 
+    Canvas::ShapeType get_shape_type() const
+    {
+        return shape_type_;
+    }
+
    private:
     // Drawing functions.
     void draw_background();
@@ -57,6 +62,7 @@ class Canvas : public Widget
 
     // Event handlers for mouse interactions.
     void mouse_click_event();
+    void mouse_click_right_event();
     void mouse_move_event();
     void mouse_release_event();
 

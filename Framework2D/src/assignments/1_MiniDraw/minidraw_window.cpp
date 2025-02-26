@@ -4,11 +4,12 @@
 
 namespace USTC_CG
 {
-MiniDraw::MiniDraw(const std::string& window_name) : Window(window_name) // 调用基类构造函数，传递窗口标题
+MiniDraw::MiniDraw(const std::string& window_name)
+    : Window(window_name)  // 调用基类构造函数，传递窗口标题
 {
     // 创建画布组件实例
     // 使用智能指针管理画布生命周期，确保窗口销毁时自动释放资源
-    p_canvas_ = std::make_shared<Canvas>("Widget.Canvas"); 
+    p_canvas_ = std::make_shared<Canvas>("Widget.Canvas");
 }
 
 MiniDraw::~MiniDraw()
@@ -29,12 +30,12 @@ void MiniDraw::draw_canvas()
     ImGui::SetNextWindowPos(viewport->WorkPos);
     // 设置画布窗口尺寸与视口工作区一致
     ImGui::SetNextWindowSize(viewport->WorkSize);
-    
+
     // 创建无装饰背景的画布窗口
     if (ImGui::Begin(
             "Canvas",
             &flag_show_canvas_view_,  // 窗口可见性控制标志
-            ImGuiWindowFlags_NoDecoration|ImGuiWindowFlags_NoBackground))
+            ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground))
     {
         // 形状工具选择区
         // 线条工具按钮
@@ -43,26 +44,26 @@ void MiniDraw::draw_canvas()
             std::cout << "Set shape to Line" << std::endl;
             p_canvas_->set_line();  // 切换画布绘制模式为线段
         }
-        ImGui::SameLine(); 
+        ImGui::SameLine();
         // 矩形工具按钮
         if (ImGui::Button("Rect"))
         {
             std::cout << "Set shape to Rect" << std::endl;
             p_canvas_->set_rect();  // 切换画布绘制模式为矩形
         }
-        ImGui::SameLine(); 
+        ImGui::SameLine();
         if (ImGui::Button("Ellipse"))
         {
             std::cout << "Set shape to Ellipse" << std::endl;
             p_canvas_->set_ellipse();
         }
-        ImGui::SameLine(); 
+        ImGui::SameLine();
         if (ImGui::Button("Polygon"))
         {
             std::cout << "Set shape to Polygon" << std::endl;
             p_canvas_->set_polygon();
         }
-        ImGui::SameLine(); 
+        ImGui::SameLine();
         if (ImGui::Button("Freehand"))
         {
             std::cout << "Free to draw" << std::endl;
@@ -75,10 +76,17 @@ void MiniDraw::draw_canvas()
         //    - Ellipse
         //    - Polygon
         //    - Freehand(optional)
-        
+
         // 画布操作提示
         ImGui::Text("Press left mouse to add shapes.");
-        
+        // 添加多边形专用提示
+        if (p_canvas_->get_shape_type() == USTC_CG::Canvas::kPolygon)
+        {
+            ImGui::SameLine();
+            ImGui::TextColored(
+                ImVec4(1, 0, 0, 1), "[Right Double Click] to finish polygon");
+        }
+
         // 画布区域设置
         // 获取可用区域起始坐标（排除工具栏后的剩余空间）
         const auto& canvas_min = ImGui::GetCursorScreenPos();

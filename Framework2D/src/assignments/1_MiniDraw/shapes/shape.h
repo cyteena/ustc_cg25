@@ -2,6 +2,13 @@
 
 namespace USTC_CG
 {
+
+struct ControlPoint
+{
+    float x;
+    float y;
+};
+
 class Shape
 {
    public:
@@ -39,6 +46,16 @@ class Shape
      * @param x, y Dragging point. e.g. end point of a line.
      */
     virtual void update(float x, float y) = 0;
-    void add_control_point(float x, float y) {}
+    virtual int get_control_points_count() const
+    {
+        return 0;
+    };
+    virtual ControlPoint get_control_point(int index) const
+    {
+        return { 0.0, 0.0 };
+    };
+    virtual void add_control_point(float x, float y)
+    {
+    }
 };
 }  // namespace USTC_CG

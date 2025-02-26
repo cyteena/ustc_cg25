@@ -6,6 +6,7 @@
 #include "imgui.h"
 #include "shapes/ellipse.h"
 #include "shapes/line.h"
+#include "shapes/polygon.h"
 #include "shapes/rect.h"
 
 namespace USTC_CG
@@ -16,6 +17,8 @@ void Canvas::draw()
 
     if (is_hovered_ && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
         mouse_click_event();
+    if (is_hovered_ && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+        mouse_click_right_event();
     mouse_move_event();
     if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
         mouse_release_event();
@@ -119,7 +122,7 @@ void Canvas::draw_shapes()
 void Canvas::mouse_click_event()
 {
     // HW1_TODO: Drawing rule for more primitives
-    if (!draw_status_)
+    if (!draw_status_ || shape_type_ == kPolygon)
     {
         draw_status_ = true;
         start_point_ = end_point_ = mouse_pos_in_canvas();
@@ -144,7 +147,17 @@ void Canvas::mouse_click_event()
             // HW1_TODO: case USTC_CG::Canvas::kEllipse:
             case USTC_CG::Canvas::kEllipse:
             {
-                current_shape_ = std::make_shared<Ellipse>(
+                current_shape_ =
+                    std::make_shared<Ellipse>(start_point_.x, start_point_.y);
+                break;
+            }
+            case USTC_CG::Canvas::kPolygon:
+            {
+                if (!current_shape_)
+                {
+                    current_shape_ = std::make_shared<Polygon>();
+                }
+                current_shape_->add_control_point(
                     start_point_.x, start_point_.y);
                 break;
             }
@@ -153,12 +166,44 @@ void Canvas::mouse_click_event()
     }
     else
     {
-        draw_status_ = false;
-        if (current_shape_)
+        if (shape_type_ != kPolygon)
         {
+            draw_status_ = false;
+            if (current_shape_)
+            {
+                shape_list_.push_back(current_shape_);
+                current_shape_.reset();
+            }
+        }
+    }
+}
+
+void Canvas::mouse_click_right_event()
+{
+    // 合并所有右键处理逻辑
+    if (shape_type_ == kPolygon && current_shape_)
+    {
+        // 至少需要3个顶点才能闭合多边形
+        if (current_shape_->get_control_points_count() >= 3)
+        {
+            // 添加首顶点闭合路径
+            ControlPoint first_point = current_shape_->get_control_point(0);
+            current_shape_->add_control_point(first_point.x, first_point.y);
+
+            // 完成绘制并保存
+            draw_status_ = false;
             shape_list_.push_back(current_shape_);
             current_shape_.reset();
         }
+        else
+        {
+            std::cout << "至少需要3个顶点才能闭合多边形" << std::endl;
+        }
+    }
+    else
+    {
+        // 其他图形的右键处理（如果有需要）
+        std::cout << "当前模式不支持右键操作" << std::endl;
     }
 }
 
@@ -178,6 +223,25 @@ void Canvas::mouse_move_event()
 void Canvas::mouse_release_event()
 {
     // HW1_TODO: Drawing rule for more primitives
+    if (draw_status_ && shape_type_ != kPolygon)
+    {
+        return;
+    }
+
+    // 多边形模式下右键点击完成绘制
+    if (shape_type_ == kPolygon &&
+        ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+    {
+        if (current_shape_ && current_shape_->get_control_points_count() >= 3)
+        {
+            ControlPoint first_point = current_shape_->get_control_point(0);
+            current_shape_->add_control_point(first_point.x, first_point.y);
+
+            draw_status_ = false;
+            shape_list_.push_back(current_shape_);
+            current_shape_.reset();
+        }
+    }
 }
 
 ImVec2 Canvas::mouse_pos_in_canvas() const
