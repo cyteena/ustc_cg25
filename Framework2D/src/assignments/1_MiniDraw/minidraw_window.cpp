@@ -84,7 +84,7 @@ void MiniDraw::draw_canvas()
         {
             ImGui::SameLine();
             ImGui::TextColored(
-                ImVec4(1, 0, 0, 1), "[Right Double Click] to finish polygon");
+                ImVec4(1, 0, 0, 1), "[Right Click] to finish polygon");
         }
 
         // 画布区域设置
