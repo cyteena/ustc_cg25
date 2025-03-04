@@ -43,8 +43,8 @@ class ImageWidget : public Widget
     void load_gltexture();
 
    protected:
-    std::string filename_;                 // Path to the image file.
     std::shared_ptr<Image> data_;          // Raw pixel data of the image.
+    std::string filename_;                 // Path to the image file.
     GLuint tex_id_ = 0;                    // OpenGL texture identifier.
 
     ImVec2 position_ = ImVec2(0.0f, 0.0f);  // Position of the image in the GUI.
