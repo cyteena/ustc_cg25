@@ -5,7 +5,7 @@
 - 大致阅读 [GUI 简介](./supplement/gui_introduction.md)，不完全懂也没关系，不用担心！
 - 根据 [配置说明](../../../Framework2D/README.md) 配置作业项目代码，把 Demo 程序跑通。
 - 简单了解 [绘图基本功能的实现](./supplement/framework_details.md) ，一步一步完成画**直线**和**矩形**的 MiniDraw 程序，学习如何添加按钮、处理鼠标交互等。**（这一步的结果已经在框架中给出，目的主要是帮助了解框架的使用，你也可以运行 `1_MiniDraw.exe` 尝试，直接进入下一步完成 MiniDraw 功能的扩充。）**
-- 模仿上述过程，添加更多图形的绘制，如 `Ellipse`，`Polygon`，`Freehand`（自由绘制模式，optional）等。我们在程序中提供了若干处 `HW1_TODO` 的提示，根据下面的提示补充相应的功能，就可以完成这次作业。
+- 模仿上述过程，添加更多图形的绘制，如 `Ellipse`，`Polygon`，`Freehand`（自由绘制模式，optional）等。我们在程序中提供了若干处 `HW1_TODO` 的提示，根据本文档接下来的教程补充相应的功能，就可以完成这次作业。
 
 ## 目标和要求
 
@@ -74,7 +74,7 @@ void set_rect();
 椭圆类的实现请参考同文件夹下[直线类](../../../Framework2D/src/assignments/1_MiniDraw/shapes/line.h) `Line`、[矩形类](../../../Framework2D/src/assignments/1_MiniDraw/shapes/rect.h) `Rect` ，你需要为椭圆定义一个数据存储的结构 `Class Ellipse`，一个构造方法，并实现一个椭圆的绘制函数 `draw()`，这里 ImGui 为我们提供了一个现有的方法用以绘制椭圆：
 
 ```cpp
-void AddEllipse(const ImVec2& center, float radius_x, float radius_y, ImU32 col, float rot = 0.0f, int num_segments = 0, float thickness = 1.0f);
+void AddEllipse(const ImVec2& center, const ImVec2& radius, ImU32 col, float rot, int num_segments, float thickness);
 ```
 
 为了实现椭圆形状的动态更新，可以仿照 `Line` 和 `Rect` 类写一个 `update(float x, float y)` 函数，它用传入的二维鼠标位置更新椭圆内存储的数据。
@@ -137,7 +137,25 @@ if (!draw_status_) // 点击鼠标开启绘制状态
 
 > **思考：多边形的数据应该如何存储？**
 
-对于多边形，重载 `add_control_point(float x, float y)` 函数可以用于为其添加顶点，实现 `update(float x, float y)`以传递鼠标移动时的更新，绘制函数 `draw()` 可以将其**分解为多段直线绘制**。
+一个 Polygon 类的示例：
+```cpp
+class Polygon : public Shape
+{
+   public:
+    Polygon();
+    Polygon(std::vector<float> x_list, std::vector<float> y_list);
+    virtual ~Polygon() = default;
+
+    void draw(const Config& config) const;
+    void update(float x, float y);
+    void add_control_point(float x, float y);
+
+   private:
+    std::vector<float> x_list_, y_list_;
+};
+```
+
+对于多边形，重写 `add_control_point(float x, float y)` 函数可以用于为其添加顶点，实现 `update(float x, float y)`以传递鼠标移动时的更新，绘制函数 `draw()` 可以将其**分解为多段直线绘制**。
 
 > **在 ImGui 中也提供了多边形的绘制函数，但是它做不到在绘制的过程中保持开放，绘制结束时连接首位两点的效果**
 
@@ -145,13 +163,13 @@ if (!draw_status_) // 点击鼠标开启绘制状态
 
 可以按照这样的逻辑：**鼠标左键单击时**，创建一个多边形对象，**后续鼠标左键单击的时候**为多边形添加顶点，直到**鼠标右键单击**结束多边形的创建。
 
-相应地要修改 `mouse_click_event()`, `mouse_move_event()`, `mouse_release_event()` 中的中多边形相关的逻辑，此外，你可以模仿上述函数，在 Canvas 鼠标右键的逻辑 `mouse_right_click_event()`，例如：
+相应地要修改 `mouse_click_event()`, `mouse_move_event()`, `mouse_release_event()` 中的中多边形相关的逻辑，此外，你可以模仿上述函数，在 Canvas 中实现鼠标右键的逻辑 `mouse_right_click_event()`，例如：
 
 ```cpp
 void Canvas::draw()
 {
     draw_background();
-
+    // HW1_TODO: more interaction events
     if (is_hovered_ && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
         mouse_click_event();
     if (is_hovered_ && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
@@ -168,6 +186,12 @@ void Canvas::draw()
 
 > **Freehand 图形的绘制事实上和多边形较为类似，实现思路是一致的。**
 
+参考示例：
+<div align=center><img width = 75% src ="./figs/freehand.gif"/></div align>
+
+## 查看类图
+
+作业要求导出实现的各种形状的类关系图，可以参考 [Visual Studio 导出类图](https://blog.csdn.net/songhuangong123/article/details/125970557) 或 [使用 plantuml 绘制类图](../../../Softwares/Clang-uml.md)。
 
 ## 补充材料和提示
 

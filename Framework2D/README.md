@@ -33,7 +33,7 @@ git submodule update --init --recursive
 
 确保在 [third_party/](./third_party/) 目录下的所有子文件夹都不是空的。
 
-可以根据热身训练中的 CMake 配置教程配置本项目：
+可以根据[热身训练的 CMake 配置教程](../Homeworks/0_cpp_warmup/documents/CMake_step_by_step/CMAKE_step_by_step.md)配置本项目，下面写的比较简略：
 
 Step 1: 首先确保 VS Code 中安装了必要的 C++ 、CMake 扩展（C/C++, C/C++ Extension Pack, CMake Tools 等）。
 
@@ -49,15 +49,15 @@ Step 4: 再次打开 VS Code 命令框，选择 CMake: Build，等待项目生�
 
 此时，可以看见项目的根目录下出现了三个文件夹 build/、bin/和 libs/，其中 bin/ 文件夹下有可执行文件 `demo.exe`，执行该文件可以出现以下界面
 
-<div align=center><img width = 75% src ="../Homeworks/1_mini_draw/documents/figs/demo_0.png"/></div align>
+<div align=center><img width = 75% src ="../Homeworks/1_mini_draw/documents/figs/demo_window.jpg"/></div align>
 
-其中 File > Open Image File.. 可以打开文件对话框，可选择 .jpg/.png 格式的图片显示
+其中 File > Open Image File.. 可以打开文件对话框，选择 .jpg/.png 格式的图片显示
 
-<div align=center><img width = 75% src ="../Homeworks/1_mini_draw/documents/figs/demo_0.5.png"/></div align>
+<div align=center><img width = 75% src ="../Homeworks/1_mini_draw/documents/figs/demo_framework.jpg"/></div align>
 
 ## 作业项目
 
-作业项目生成在 `1_MiniDraw.exe`，其中实现了直线段`Line`和矩形线框`Rect`的绘制，单击界面上方的按钮可以修改当前绘制的类型，拖动鼠标可以实现绘制。细节请参考 [ImGui 程序框架具体实现](framework_details.md)。
+作业一的项目生成在 `1_MiniDraw`，其中实现了直线段`Line`和矩形线框`Rect`的绘制，单击界面上方的按钮可以修改当前绘制的类型，拖动鼠标可以实现绘制。细节请参考 [作业一文档](../Homeworks/1_mini_draw/documents/README.md)。
 
 <div align=center><img width = 75% src ="../Homeworks/1_mini_draw/documents/figs/demo_2.png"/></div align>
 

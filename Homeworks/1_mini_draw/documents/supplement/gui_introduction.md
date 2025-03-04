@@ -14,7 +14,7 @@ GUI的出现大大简化了计算机的操作，使得没有编程背景的普�
 
 ## 常用的GUI开发工具
 
-### Qt
+### Qt (本次作业不使用)
 
 Qt 是一个跨平台的 C++ 库，广泛用于开发GUI应用程序。它不仅限于GUI编程，也支持SQL数据库操作、网络、多线程等多种功能。详细可以参考 [Qt 介绍](https://github.com/Ubpa/USTC_CG/blob/master/Homeworks/1_MiniDraw/documents/QtIntro.md)
 

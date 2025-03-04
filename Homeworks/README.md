@@ -44,3 +44,4 @@
 
 0. C++ 课前热身练习 [->](./0_cpp_warmup/) 
 1. MiniDraw 画图小工具 [->](./1_mini_draw/)
+2. ImageWarping 图像变形 [->](./2_image_warping/)

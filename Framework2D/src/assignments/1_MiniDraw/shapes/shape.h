@@ -58,4 +58,5 @@ class Shape
     {
     }
 };
+
 }  // namespace USTC_CG
