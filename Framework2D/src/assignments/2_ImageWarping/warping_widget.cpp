@@ -439,4 +439,4 @@ std::vector<uchar> WarpingWidget::ann_nearest_neighbor_interpolation(
         return { 0, 0, 0 };
     }
 }  // namespace USTC_CG
-}  // namespace USTC_CG
+}
