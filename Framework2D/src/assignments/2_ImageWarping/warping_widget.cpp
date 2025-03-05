@@ -164,7 +164,6 @@ void WarpingWidget::warping()
             // HW2_TODO: Implement the IDW warping
             // use selected points start_points_, end_points_ to construct the
             // map
-            std::cout << "IDW is being implemented." << std::endl;
             IDWWarper warper(start_points_, end_points_);
             for (int y = 0; y < data_->height(); y++)
             {
@@ -190,7 +189,6 @@ void WarpingWidget::warping()
                 std::cout << "Need at least 1 control point for RBF warping" << std::endl;
                 return;
             }
-            std::cout << "RBF is being implemented." << std::endl;
             RBFWarper warper(start_points_, end_points_);
             for (int y = 0; y < data_->height(); y++)
             {
