@@ -1,10 +1,15 @@
 #pragma once
 
 #include "common/image_widget.h"
+#include <annoylib.h>
+#include <kissrandom.h>
+
 
 namespace USTC_CG
 {
 // Image component for warping and other functions
+
+using uchar = unsigned char;
 class WarpingWidget : public ImageWidget
 {
    public:
@@ -53,9 +58,16 @@ class WarpingWidget : public ImageWidget
     bool draw_status_ = false;
     WarpingType warping_type_;
 
+    Annoy::AnnoyIndex<int, double, Annoy::Euclidean, Annoy::Kiss32Random, Annoy::AnnoyIndexSingleThreadedBuildPolicy>* annoy_index_;
+    bool index_built_ = false;
+
    private:
     // A simple "fish-eye" warping function
-    std::pair<int, int> fisheye_warping(int x, int y, int width, int height);
+    std::pair<int, int> fisheye_warping(int& x, int& y, const int& width, const int& height);
+    std::vector<unsigned char> bilinear_interpolation(float& x, float& y);
+    std::vector<uchar> nearest_neighbor_interpolation(float& x, float& y);
+    std::vector<uchar> ann_nearest_neighbor_interpolation(float& x, float& y);
+    void build_annoy_index();
 };
 
 }  // namespace USTC_CG

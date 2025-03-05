@@ -1,5 +1,6 @@
 #include "warping_widget.h"
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 
@@ -17,6 +18,12 @@ WarpingWidget::WarpingWidget(
 {
     if (data_)
         back_up_ = std::make_shared<Image>(*data_);
+    annoy_index_ = new Annoy::AnnoyIndex<
+        int,
+        double,
+        Annoy::Euclidean,
+        Annoy::Kiss32Random,
+        Annoy::AnnoyIndexSingleThreadedBuildPolicy>(2);
 }
 
 void WarpingWidget::draw()
@@ -26,6 +33,27 @@ void WarpingWidget::draw()
     // Draw the canvas
     if (flag_enable_selecting_points_)
         select_points();
+}
+
+void WarpingWidget::build_annoy_index()
+{
+    if (!data_)
+        return;
+
+    const int w = data_->width();
+    const int h = data_->height();
+
+    for (int y = 0; y < h; ++y)
+    {
+        for (int x = 0; x < w; ++x)
+        {
+            double point[2] = { static_cast<double>(x),
+                                static_cast<double>(y) };
+            annoy_index_->add_item(y * w + x, point);
+        }
+    }
+    annoy_index_->build(10, 1);  // 构建10棵树
+    index_built_ = true;
 }
 
 void WarpingWidget::invert()
@@ -164,18 +192,14 @@ void WarpingWidget::warping()
             // HW2_TODO: Implement the IDW warping
             // use selected points start_points_, end_points_ to construct the
             // map
-            IDWWarper warper(start_points_, end_points_);
+            IDWWarper warper(end_points_, start_points_);
             for (int y = 0; y < data_->height(); y++)
             {
                 for (int x = 0; x < data_->width(); x++)
                 {
-                    auto [new_x, new_y] = warper.warp(x, y);
-                    if (new_x >= 0 && new_x < data_->width() && new_y >= 0 &&
-                        new_y < data_->height())
-                    {
-                        auto pixel = data_->get_pixel(x, y);
-                        warped_image.set_pixel(new_x, new_y, pixel);
-                    }
+                    auto [src_x, src_y] = warper.warp(x, y);
+                    auto pixel = ann_nearest_neighbor_interpolation(src_x, src_y);
+                    warped_image.set_pixel(x, y, pixel);
                 }
             }
             break;
@@ -185,22 +209,20 @@ void WarpingWidget::warping()
             // HW2_TODO: Implement the RBF warping
             // use selected points start_points_, end_points_ to construct the
             // map
-            if (start_points_.size() < 1) {  // 添加控制点数量检查
-                std::cout << "Need at least 1 control point for RBF warping" << std::endl;
+            if (start_points_.size() < 1)
+            {  // 添加控制点数量检查
+                std::cout << "Need at least 1 control point for RBF warping"
+                          << std::endl;
                 return;
             }
-            RBFWarper warper(start_points_, end_points_);
+            RBFWarper warper(end_points_, start_points_);
             for (int y = 0; y < data_->height(); y++)
             {
                 for (int x = 0; x < data_->width(); x++)
                 {
-                    auto [new_x, new_y] = warper.warp(x, y);
-                    if (new_x >= 0 && new_x < data_->width() && new_y >= 0 &&
-                        new_y < data_->height())
-                    {
-                        auto pixel = data_->get_pixel(x, y);
-                        warped_image.set_pixel(new_x, new_y, pixel);
-                    }
+                    auto [src_x, src_y] = warper.warp(x, y);
+                    auto pixel = ann_nearest_neighbor_interpolation(src_x, src_y);
+                    warped_image.set_pixel(x, y, pixel);
                 }
             }
             break;
@@ -292,8 +314,11 @@ void WarpingWidget::init_selections()
     end_points_.clear();
 }
 
-std::pair<int, int>
-WarpingWidget::fisheye_warping(int x, int y, int width, int height)
+std::pair<int, int> WarpingWidget::fisheye_warping(
+    int& x,
+    int& y,
+    const int& width,
+    const int& height)
 {
     float center_x = width / 2.0f;
     float center_y = height / 2.0f;
@@ -315,4 +340,79 @@ WarpingWidget::fisheye_warping(int x, int y, int width, int height)
 
     return { new_x, new_y };
 }
+
+std::vector<uchar> WarpingWidget::bilinear_interpolation(float& x, float& y)
+{
+    int x0 = std::floor(x);
+    int y0 = std::floor(y);
+    int x1 = x0 + 1;
+    int y1 = y0 + 1;
+
+    // 边界检查
+    x0 = std::clamp(x0, 0, data_->width() - 1);
+    x1 = std::clamp(x1, 0, data_->width() - 1);
+    y0 = std::clamp(y0, 0, data_->height() - 1);
+    y1 = std::clamp(y1, 0, data_->height() - 1);
+
+    float dx = x - x0;
+    float dy = y - y0;
+
+    auto p00 = data_->get_pixel(x0, y0);
+    auto p01 = data_->get_pixel(x0, y1);
+    auto p10 = data_->get_pixel(x1, y0);
+    auto p11 = data_->get_pixel(x1, y1);
+
+    std::vector<uchar> result(3);
+    for (int i = 0; i < 3; ++i)
+    {
+        float val = (1 - dx) * (1 - dy) * p00[i] + (1 - dx) * dy * p01[i] +
+                    dx * (1 - dy) * p10[i] + dx * dy * p11[i];
+        result[i] = static_cast<uchar>(std::clamp(val, 0.0f, 255.0f));
+    }
+    return result;
+}
+
+std::vector<uchar> WarpingWidget::nearest_neighbor_interpolation(
+    float& x,
+    float& y)
+{
+    int nearest_x = static_cast<int>(std::round(x));
+    int nearest_y = static_cast<int>(std::round(y));
+
+    nearest_x = std::clamp(nearest_x, 0, data_->width() - 1);
+    nearest_y = std::clamp(nearest_y, 0, data_->height() - 1);
+
+    return data_->get_pixel(nearest_x, nearest_y);
+}
+
+std::vector<uchar> WarpingWidget::ann_nearest_neighbor_interpolation(float& x, float& y)
+{
+    if (!index_built_) {
+        build_annoy_index();
+    }
+
+    double query[2] = {static_cast<double>(x), static_cast<double>(y)};
+    std::vector<int> result_ids;    // 改用vector接收结果
+    std::vector<double> distances;
+    
+    // 查找最近邻
+    annoy_index_->get_nns_by_vector(query, 1, -1, &result_ids, &distances);
+
+    // 将线性索引转换为坐标
+    const int w = data_->width();
+
+    if (!result_ids.empty()){
+        int nearest_id = result_ids[0];
+        int nearest_x = static_cast<int>(std::round(nearest_id % w));
+        int nearest_y = static_cast<int>(std::round(nearest_id / w));
+    
+        return data_->get_pixel(
+            std::clamp(nearest_x, 0, w-1), 
+            std::clamp(nearest_y, 0, data_->height()-1)
+        );
+    }
+    else{
+        return {0,0,0};
+    }
 }  // namespace USTC_CG
+}
