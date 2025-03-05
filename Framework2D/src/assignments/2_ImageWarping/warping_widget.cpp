@@ -3,11 +3,16 @@
 #include <cmath>
 #include <iostream>
 
+#include "warper/IDW_warper.h"
+#include "warper/RBF_warper.h"
+
 namespace USTC_CG
 {
 using uchar = unsigned char;
 
-WarpingWidget::WarpingWidget(const std::string& label, const std::string& filename)
+WarpingWidget::WarpingWidget(
+    const std::string& label,
+    const std::string& filename)
     : ImageWidget(label, filename)
 {
     if (data_)
@@ -111,7 +116,7 @@ void WarpingWidget::warping()
     // HW2_TODO: You should implement your own warping function that interpolate
     // the selected points.
     // Please design a class for such warping operations, utilizing the
-    // encapsulation, inheritance, and polymorphism features of C++. 
+    // encapsulation, inheritance, and polymorphism features of C++.
 
     // Create a new image to store the result
     Image warped_image(*data_);
@@ -157,15 +162,49 @@ void WarpingWidget::warping()
         case kIDW:
         {
             // HW2_TODO: Implement the IDW warping
-            // use selected points start_points_, end_points_ to construct the map
-            std::cout << "IDW not implemented." << std::endl;
+            // use selected points start_points_, end_points_ to construct the
+            // map
+            std::cout << "IDW is being implemented." << std::endl;
+            IDWWarper warper(start_points_, end_points_);
+            for (int y = 0; y < data_->height(); y++)
+            {
+                for (int x = 0; x < data_->width(); x++)
+                {
+                    auto [new_x, new_y] = warper.warp(x, y);
+                    if (new_x >= 0 && new_x < data_->width() && new_y >= 0 &&
+                        new_y < data_->height())
+                    {
+                        auto pixel = data_->get_pixel(x, y);
+                        warped_image.set_pixel(new_x, new_y, pixel);
+                    }
+                }
+            }
             break;
         }
         case kRBF:
         {
             // HW2_TODO: Implement the RBF warping
-            // use selected points start_points_, end_points_ to construct the map
-            std::cout << "RBF not implemented." << std::endl;
+            // use selected points start_points_, end_points_ to construct the
+            // map
+            if (start_points_.size() < 1) {  // 添加控制点数量检查
+                std::cout << "Need at least 1 control point for RBF warping" << std::endl;
+                return;
+            }
+            std::cout << "RBF is being implemented." << std::endl;
+            RBFWarper warper(start_points_, end_points_);
+            for (int y = 0; y < data_->height(); y++)
+            {
+                for (int x = 0; x < data_->width(); x++)
+                {
+                    auto [new_x, new_y] = warper.warp(x, y);
+                    if (new_x >= 0 && new_x < data_->width() && new_y >= 0 &&
+                        new_y < data_->height())
+                    {
+                        auto pixel = data_->get_pixel(x, y);
+                        warped_image.set_pixel(new_x, new_y, pixel);
+                    }
+                }
+            }
             break;
         }
         default: break;

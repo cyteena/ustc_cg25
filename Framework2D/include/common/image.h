@@ -138,7 +138,7 @@ class Image
             static_cast<std::size_t>(y) * static_cast<std::size_t>(width_) +
             static_cast<std::size_t>(x);
         index *= static_cast<std::size_t>(channels_);
-        for (int channel = 0; channel < channels_reset; ++channel)
+        for (std::size_t channel = 0; channel < static_cast<std::size_t>(channels_reset); ++channel)
         {
             image_data_[index + channel] = values[channel];
         }

@@ -9,16 +9,16 @@
 // 3. Subclasses of Warper, IDWWarper and RBFWarper, should implement the
 // warp(...) function to perform the actual warping.
 #pragma once
-
+#include<vector>
 namespace USTC_CG
 {
 class Warper
 {
    public:
     virtual ~Warper() = default;
-
     // HW2_TODO: A virtual function warp(...)
-    
+    virtual std::pair<float,float> warp(float x, float y) = 0;  
+    // HW2_TODO: other functions or variables if you need
     // HW2_TODO: other functions or variables if you need
 };
 }  // namespace USTC_CG
