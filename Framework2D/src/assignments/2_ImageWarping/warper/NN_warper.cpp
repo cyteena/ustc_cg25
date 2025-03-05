@@ -63,8 +63,8 @@ NNWarper::NNWarper(
     // 关闭过于详细的输出，避免日志过于冗长
     trainer.be_verbose();
     
-    // 设置合适的同步间隔
-    trainer.set_synchronization_file("nn_warper_sync", std::chrono::seconds(30));
+    // // 设置合适的同步间隔
+    // trainer.set_synchronization_file("nn_warper_sync", std::chrono::seconds(30));
     
     trainer.train(inputs, targets);
 }
