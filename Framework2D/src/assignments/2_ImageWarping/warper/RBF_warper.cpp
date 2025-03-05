@@ -49,7 +49,7 @@ RBFWarper::RBFWarper(
     // 构建右侧向量 [q_x; 0] 和 [q_y; 0]
     VectorXf Vx(n + 3), Vy(n + 3);
     for (int i = 0; i < static_cast<int>(n); ++i) {
-        Vx(i) = end_points[i].x  - start_points[i].x; // 计算位移量
+        Vx(i) = end_points[i].x  - start_points[i].x;
         Vy(i) = end_points[i].y - start_points[i].y;
     }
     Vx.tail<3>().setZero();
