@@ -40,10 +40,10 @@ set_target_properties(imgui PROPERTIES FOLDER "third_party")
 
 
 # dlib配置
-set(dlib_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE STRING "")
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR} "${CMAKE_CURRENT_BINARY_DIR}/dlib" EXCLUDE_FROM_ALL)
+set(dlib_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/dlib-19.24" CACHE STRING "")
+add_subdirectory(${dlib_SOURCE_DIR} "${CMAKE_CURRENT_BINARY_DIR}/dlib" EXCLUDE_FROM_ALL)
 
-# 禁用不需要的功能
+# 禁用不需要的
 set(DLIB_NO_GUI_SUPPORT ON CACHE BOOL "Disable GUI components" FORCE)
 set(DLIB_PNG_SUPPORT OFF CACHE BOOL "Disable PNG support" FORCE)
 set(DLIB_JPEG_SUPPORT OFF CACHE BOOL "Disable JPEG support" FORCE)

@@ -35,12 +35,14 @@ class WarpingWidget : public ImageWidget
         kFisheye = 1,
         kIDW = 2,
         kRBF = 3,
+        kNN = 4,
     };
     // Warping type setters.
     void set_default();
     void set_fisheye();
     void set_IDW();
     void set_RBF();
+    void set_NN();
 
     // Point selecting interaction
     void enable_selecting(bool flag);

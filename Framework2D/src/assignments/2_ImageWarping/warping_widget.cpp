@@ -5,8 +5,8 @@
 #include <iostream>
 
 #include "warper/IDW_warper.h"
+#include "warper/NN_warper.h"
 #include "warper/RBF_warper.h"
-
 namespace USTC_CG
 {
 using uchar = unsigned char;
@@ -227,6 +227,22 @@ void WarpingWidget::warping()
             }
             break;
         }
+        case kNN:
+        {
+            std::cout
+                << "You shouldn't use the NN method if you have few points"
+                << std::endl;
+            NNWarper warper(end_points_, start_points_);
+            for (int y = 0; y < data_->height(); y++)
+            {
+                for (int x = 0; x < data_->width(); x++)
+                {
+                    auto [src_x, src_y] = warper.warp(x, y);
+                    auto pixel = nearest_neighbor_interpolation(src_x, src_y);
+                    warped_image.set_pixel(x, y, pixel);
+                }
+            }
+        }
         default: break;
     }
 
@@ -253,6 +269,10 @@ void WarpingWidget::set_IDW()
 void WarpingWidget::set_RBF()
 {
     warping_type_ = kRBF;
+}
+void WarpingWidget::set_NN()
+{
+    warping_type_ = kNN;
 }
 void WarpingWidget::enable_selecting(bool flag)
 {
@@ -385,34 +405,38 @@ std::vector<uchar> WarpingWidget::nearest_neighbor_interpolation(
     return data_->get_pixel(nearest_x, nearest_y);
 }
 
-std::vector<uchar> WarpingWidget::ann_nearest_neighbor_interpolation(float& x, float& y)
+std::vector<uchar> WarpingWidget::ann_nearest_neighbor_interpolation(
+    float& x,
+    float& y)
 {
-    if (!index_built_) {
+    if (!index_built_)
+    {
         build_annoy_index();
     }
 
-    double query[2] = {static_cast<double>(x), static_cast<double>(y)};
-    std::vector<int> result_ids;    // 改用vector接收结果
+    double query[2] = { static_cast<double>(x), static_cast<double>(y) };
+    std::vector<int> result_ids;  // 改用vector接收结果
     std::vector<double> distances;
-    
+
     // 查找最近邻
     annoy_index_->get_nns_by_vector(query, 1, -1, &result_ids, &distances);
 
     // 将线性索引转换为坐标
     const int w = data_->width();
 
-    if (!result_ids.empty()){
+    if (!result_ids.empty())
+    {
         int nearest_id = result_ids[0];
         int nearest_x = static_cast<int>(std::round(nearest_id % w));
         int nearest_y = static_cast<int>(std::round(nearest_id / w));
-    
+
         return data_->get_pixel(
-            std::clamp(nearest_x, 0, w-1), 
-            std::clamp(nearest_y, 0, data_->height()-1)
-        );
+            std::clamp(nearest_x, 0, w - 1),
+            std::clamp(nearest_y, 0, data_->height() - 1));
     }
-    else{
-        return {0,0,0};
+    else
+    {
+        return { 0, 0, 0 };
     }
 }  // namespace USTC_CG
-}
+}  // namespace USTC_CG
