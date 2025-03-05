@@ -28,9 +28,9 @@ class NNWarper : public Warper
     float y_offset_ = 0.0f;
     using net_type = dlib::loss_mean_squared_multioutput<dlib::fc<
         2,
-        dlib::gelu<dlib::fc<
+        dlib::elu<dlib::fc<
             10,
-            dlib::gelu<dlib::fc<10, dlib::input<dlib::matrix<float>>>>>>>>;
+            dlib::elu<dlib::fc<10, dlib::input<dlib::matrix<float>>>>>>>>;
 
     net_type net_;
 

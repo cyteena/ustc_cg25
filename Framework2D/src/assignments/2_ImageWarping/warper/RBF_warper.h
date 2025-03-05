@@ -19,7 +19,6 @@ class RBFWarper : public Warper
     std::vector<ImVec2> start_points_;
     std::vector<ImVec2> end_points_;
     // HW2_TODO: other functions or variables if you need
-   private:
     std::vector<float> alpha_x_;              // RBF x方向权重
     std::vector<float> alpha_y_;              // RBF y方向权重
     float A_[2][2] = { { 1, 0 }, { 0, 1 } };  // 仿射矩阵

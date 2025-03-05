@@ -32,9 +32,10 @@ std::pair<float, float> IDWWarper::warp(float x, float y)
         // f(p) = \sum_{i=1}^n w_i(p)q_i
         // w_i(p) = sigma_i(p) / sum_sigma
         sum_w += sigma;
-        sum_wx += sigma * static_cast<float>(end_points_[i].x - start_points_[i].x);
-        sum_wy += sigma * static_cast<float>(end_points_[i].y - start_points_[i].y);
-
+        sum_wx +=
+            sigma * static_cast<float>(end_points_[i].x - start_points_[i].x);
+        sum_wy +=
+            sigma * static_cast<float>(end_points_[i].y - start_points_[i].y);
     }
     if (sum_w < epsilon)
     {
