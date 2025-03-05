@@ -198,7 +198,7 @@ void WarpingWidget::warping()
                 for (int x = 0; x < data_->width(); x++)
                 {
                     auto [src_x, src_y] = warper.warp(x, y);
-                    auto pixel = ann_nearest_neighbor_interpolation(src_x, src_y);
+                    auto pixel = nearest_neighbor_interpolation(src_x, src_y);
                     warped_image.set_pixel(x, y, pixel);
                 }
             }
@@ -221,7 +221,7 @@ void WarpingWidget::warping()
                 for (int x = 0; x < data_->width(); x++)
                 {
                     auto [src_x, src_y] = warper.warp(x, y);
-                    auto pixel = ann_nearest_neighbor_interpolation(src_x, src_y);
+                    auto pixel = nearest_neighbor_interpolation(src_x, src_y);
                     warped_image.set_pixel(x, y, pixel);
                 }
             }

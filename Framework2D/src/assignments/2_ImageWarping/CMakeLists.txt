@@ -9,12 +9,18 @@ add_executable(${PROJECT_NAME} ${source})
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # HW2_TODO(optional): Add Dlib support to the project
-find_package(dlib QUIET)
-if(dlib_FOUND)
-  message(STATUS "Dlib found")
-  target_link_libraries(${PROJECT_NAME} PRIVATE dlib::dlib)
+if(TARGET dlib::dlib)
+    message(STATUS "Using Dlib from project submodules")
+    target_link_libraries(${PROJECT_NAME} PRIVATE dlib::dlib)
 else()
-  message(STATUS "Dlib not found")
+    # 回退到系统查找
+    find_package(dlib QUIET)
+    if(dlib_FOUND)
+        message(STATUS "Dlib found in system")
+        target_link_libraries(${PROJECT_NAME} PRIVATE dlib::dlib)
+    else()
+        message(WARNING "Dlib not found, some features will be disabled")
+    endif()
 endif()
 
 set_target_properties(${PROJECT_NAME} PROPERTIES 
