@@ -1,0 +1,159 @@
+@startuml
+namespace USTC_CG {
+    class WarpingWidget {
+        - back_up_ : std::shared_ptr<Image>
+        - start_points_ : std::vector<ImVec2>
+        - end_points_ : std::vector<ImVec2>
+        - start_ : ImVec2
+        - end_ : ImVec2
+        - flag_enable_selecting_points_ : bool
+        - draw_status_ : bool
+        - warping_type_ : WarpingType
+        - annoy_index_
+        - index_built_ : bool
+        - fisheye_warping() : std::pair<int, int>
+        - bilinear_interpolation() : std::vector<unsigned char>
+        - nearest_neighbor_interpolation() : std::vector<uchar>
+        - ann_nearest_neighbor_interpolation() : std::vector<uchar>
+        - build_annoy_index() : void
+        + WarpingWidget()
+        + ~WarpingWidget()
+        + draw() : void
+        + invert() : void
+        + mirror() : void
+        + gray_scale() : void
+        + warping() : void
+        + restore() : void
+        + set_default() : void
+        + set_fisheye() : void
+        + set_IDW() : void
+        + set_RBF() : void
+        + set_NN() : void
+        + enable_selecting() : void
+        + select_points() : void
+        + init_selections() : void
+    }
+    class ImageWidget {
+         #label_ : std::string
+         #filename_ : std::string
+         #data_ : std::shared_ptr<Image>
+         #texture_id_ : ImTextureID
+         #position_ : ImVec2
+         #image_width_ : int
+         #image_height_ : int
+         #texture_size_ : ImVec2
+         #flag_texture_uploaded_ : bool
+         #flag_texture_valid_ : bool
+        + ImageWidget()
+        + ImageWidget()
+        + ~ImageWidget()
+        + draw() : void
+        + load_image() : bool
+        + update() : void
+        + save_to_disk() : bool
+        + get_image_size() : ImVec2
+        + set_position() : void
+    }
+    class Window {
+        # window_name_ : std::string
+        # flag_init_ : bool
+        # flag_show_demo_window_ : bool
+        # flag_show_app_metrics_window_ : bool
+        # flag_show_app_style_editor_ : bool
+        # flag_show_user_guide_window_ : bool
+        + Window()
+        + Window()
+        + ~Window()
+        + init() : bool
+        + run() : void
+        + draw() : virtual void
+    }
+    class Image {
+         #width_ : int
+         #height_ : int
+         #channels_ : int
+         #data_ : unsigned char*
+        + Image()
+        + Image()
+        + ~Image()
+        + load_from_file() : bool
+        + save_to_file() : bool
+        + create() : bool
+        + width() : int
+        + height() : int
+        + channels() : int
+        + data() : unsigned char*
+        + get_pixel() : const unsigned char*
+        + set_pixel() : void
+    }
+    class ImageWarping {
+        - p_image_ : std::shared_ptr<WarpingWidget>
+        - flag_show_main_view_ : bool
+        - flag_open_file_dialog_ : bool
+        - flag_save_file_dialog_ : bool
+        - draw_toolbar() : void
+        - draw_image() : void
+        - draw_open_image_file_dialog() : void
+        - draw_save_image_file_dialog() : void
+        + ImageWarping()
+        + ~ImageWarping()
+        + draw() : void
+    }
+    enum WarpingType {
+        kDefault
+        kFisheye
+        kIDW
+        kRBF
+        kNN
+    }
+    
+    class Warper {
+        + virtual ~Warper() = default
+        + virtual std::pair<float,float> warp(float x, float y) = 0
+    }
+
+    class IDWWarper {
+        - start_points_ : std::vector<ImVec2>
+        - end_points_ : std::vector<ImVec2>
+        + IDWWarper()
+        + virtual ~IDWWarper() = default
+        + std::pair<float, float> warp(float x, float y) override
+    }
+
+    class NNWarper {
+        - start_points_ : std::vector<ImVec2>
+        - end_points_ : std::vector<ImVec2>
+        - x_scale_ : float
+        - y_scale_ : float
+        - x_offset_ : float
+        - y_offset_ : float
+        - net_ : net_type
+        + NNWarper()
+        + virtual ~NNWarper() = default
+        + std::pair<float, float> warp(float x, float y) override
+    }
+
+    class RBFWarper {
+        - start_points_ : std::vector<ImVec2>
+        - end_points_ : std::vector<ImVec2>
+        - alpha_x_ : std::vector<float>
+        - alpha_y_ : std::vector<float>
+        - A_ : float[2][2]
+        - b_ : ImVec2
+        + RBFWarper()
+        + virtual ~RBFWarper() = default
+        + std::pair<float, float> warp(float x, float y) override
+    }
+}
+
+USTC_CG.WarpingWidget --|> USTC_CG.ImageWidget
+USTC_CG.ImageWidget --|> USTC_CG.Widget
+USTC_CG.ImageWarping --|> USTC_CG.Window
+USTC_CG.WarpingWidget o-- USTC_CG.Image : back_up_
+USTC_CG.ImageWidget o-- USTC_CG.Image : data_
+USTC_CG.WarpingWidget -- USTC_CG.WarpingType
+
+USTC_CG.IDWWarper --|> USTC_CG.Warper
+USTC_CG.NNWarper --|> USTC_CG.Warper
+USTC_CG.RBFWarper --|> USTC_CG.Warper
+@enduml
