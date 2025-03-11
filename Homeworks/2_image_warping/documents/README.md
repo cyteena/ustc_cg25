@@ -143,7 +143,7 @@ std::vector<ImVec2> start_points_, end_points_;
 
 给定输入输出的二维点对`source` 和 `target`，我们可以构造输入维度为 2，输出维度为 2 的深度神经网络，例如：
 ```c++
-using warping_net = loss_mean_squared<    // loss mean squared
+using warping_net = loss_mean_squared_multioutput<    // loss mean squared
                     fc<2,                  // output layer: 1 dim
                     relu<fc<10,            // hidden layer 2: 10 dim + ReLU activation
                     relu<fc<10,            // hidden layer 1: 10 dim + ReLU activation
@@ -152,7 +152,7 @@ using warping_net = loss_mean_squared<    // loss mean squared
 ```
 配置优化器：
 ```c++
-dnn_trainer<net_type> trainer(net, sgd(0.001)); 
+dnn_trainer<net_type, adam> trainer(net);
 ```
 然后进行训练：
 ```c++
