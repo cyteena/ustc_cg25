@@ -3,10 +3,12 @@ file(GLOB source
   "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/*.h" 
   "${CMAKE_CURRENT_SOURCE_DIR}/shapes/*.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/shapes/*.h" 
+  "${CMAKE_CURRENT_SOURCE_DIR}/shapes/*.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/CloneMethods/*.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/CloneMethods/*.cpp"
 )
 add_executable(${PROJECT_NAME} ${source})
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${INCLUDE_DIR}/common)
 set_target_properties(${PROJECT_NAME} PROPERTIES 
   DEBUG_POSTFIX "_d"
   RUNTIME_OUTPUT_DIRECTORY "${BINARY_DIR}"

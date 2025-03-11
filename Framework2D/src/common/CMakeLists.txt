@@ -1,6 +1,7 @@
 project(common)
 file(GLOB source
   "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
   "${INCLUDE_DIR}/common/*.h"
 )
 add_library(${PROJECT_NAME} ${source})

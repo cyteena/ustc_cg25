@@ -51,6 +51,10 @@ void TargetImageWidget::set_realtime(bool flag)
 {
     flag_realtime_updating = flag;
 }
+void TargetImageWidget::set_seamless()
+{
+    clone_type_ = kSeamlessType;
+}
 
 void TargetImageWidget::restore()
 {
@@ -63,22 +67,18 @@ void TargetImageWidget::set_paste()
     clone_type_ = kPaste;
 }
 
-void TargetImageWidget::set_seamless()
-{
-    clone_type_ = kSeamless;
-}
 
 void TargetImageWidget::clone()
 {
     // The implementation of different types of cloning
-    // HW3_TODO: 
+    // HW3_TODO:
     // 1. In this function, you should at least implement the "seamless"
-    // cloning labeled by `clone_type_ ==kSeamless`.
+    // cloning labeled by `clone_type_ == kSeamlessType`.
     //
     // 2. It is required to improve the efficiency of your seamless cloning to
     // achieve real-time editing. (Use decomposition of sparse matrix before
     // solve the linear system). The real-time updating (update when the mouse
-    // is moving) is only available when the checkerboard is selected. 
+    // is moving) is only available when the checkerboard is selected.
     if (data_ == nullptr || source_image_ == nullptr ||
         source_image_->get_region_mask() == nullptr)
         return;
@@ -90,7 +90,8 @@ void TargetImageWidget::clone()
 
     switch (clone_type_)
     {
-        case USTC_CG::TargetImageWidget::kDefault: break;
+        case USTC_CG::TargetImageWidget::kDefault:
+            break;
         case USTC_CG::TargetImageWidget::kPaste:
         {
             restore();
@@ -117,16 +118,36 @@ void TargetImageWidget::clone()
             }
             break;
         }
-        case USTC_CG::TargetImageWidget::kSeamless:
+        case USTC_CG::TargetImageWidget::kSeamlessType:
         {
             // HW3_TODO: You should implement your own seamless cloning. For
             // each pixel in the selected region, calculate the final RGB color
             // by solving Poisson Equations.
             restore();
 
+            // 1. 获取源图像、mask图像、offset等参数
+            auto src = source_image_->get_data();
+            int offset_x = static_cast<int>(mouse_position_.x) - static_cast<int>(source_image_->get_position().x);
+            int offset_y = static_cast<int>(mouse_position_.y) - static_cast<int>(source_image_->get_position().y);
+
+            // 2. 创建 Seamless 对象，并调用其 solve() 函数
+            Seamless seamless_clone(data_, src, mask, offset_x, offset_y);
+            auto result = seamless_clone.solve();
+
+            // 3. 将结果图像更新到目标图像中
+            *data_ = *result;
+
             break;
         }
-        default: break;
+
+        case USTC_CG::TargetImageWidget::kMixgradient:
+        {
+            restore();
+
+            break;
+        }
+        default:
+            break;
     }
 
     update();
@@ -162,4 +183,4 @@ ImVec2 TargetImageWidget::mouse_pos_in_canvas() const
     ImGuiIO& io = ImGui::GetIO();
     return ImVec2(io.MousePos.x - position_.x, io.MousePos.y - position_.y);
 }
-}  // namespace USTC_CG
+} // namespace USTC_CG

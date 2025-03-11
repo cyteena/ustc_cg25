@@ -2,6 +2,7 @@
 
 #include "source_image_widget.h"
 #include "common/image_widget.h"
+#include "CloneMethods/Seamless.h"
 
 namespace USTC_CG
 {
@@ -14,9 +15,11 @@ class TargetImageWidget : public ImageWidget
     {
         kDefault = 0,
         kPaste = 1,
-        kSeamless = 2,
+        kSeamlessType = 2,
         kMixgradient = 3,
     };
+
+    void set_seamless(std::shared_ptr<Seamless> seamless) { seamless_method_ = seamless; }
 
     explicit TargetImageWidget(
         const std::string& label,
@@ -57,5 +60,8 @@ class TargetImageWidget : public ImageWidget
     ImVec2 mouse_position_;
     bool edit_status_ = false;
     bool flag_realtime_updating = false;
+
+private:
+    std::shared_ptr<Seamless> seamless_method_;
 };
 }  // namespace USTC_CG
