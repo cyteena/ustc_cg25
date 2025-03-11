@@ -94,6 +94,24 @@ void PoissonWindow::draw_toolbar()
         // HW3_TODO: You may add more items in the menu for the different types
         // of Poisson editing.
 
+        if (ImGui::MenuItem("Seamless") && p_target_ && p_source_)
+        {
+            p_target_->set_seamless();
+        }
+        add_tooltips(
+            "Press this button and then click in the target image, to "
+            "seamless the selected region to the target image."
+        );
+
+        if (ImGui::MenuItem("Misgradient") && p_target_ && p_source_)
+        {
+            p_target_->set_seamless();
+        }
+        add_tooltips(
+            "Press this button and then click in the target image, to "
+            "seamless the selected region to the target image by mix_gradient method."
+        );
+
         ImGui::EndMainMenuBar();
     }
 }

@@ -14,7 +14,8 @@ class TargetImageWidget : public ImageWidget
     {
         kDefault = 0,
         kPaste = 1,
-        kSeamless = 2
+        kSeamless = 2,
+        kMixgradient = 3,
     };
 
     explicit TargetImageWidget(
@@ -33,6 +34,7 @@ class TargetImageWidget : public ImageWidget
     // type, you can implement seamless cloning, mix-gradient cloning, etc.
     void set_paste();
     void set_seamless();
+    void set_mixgradient();
 
     // The clone function
     void clone();
