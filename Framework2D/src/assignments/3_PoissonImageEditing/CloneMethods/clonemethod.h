@@ -7,8 +7,8 @@ class CloneMethod
 {
    public:
     CloneMethod(
-        std::shared_ptr<Image> dst,
         std::shared_ptr<Image> src,
+        std::shared_ptr<Image> dst,
         std::shared_ptr<Image> mask,
         int offset_x,
         int offset_y)

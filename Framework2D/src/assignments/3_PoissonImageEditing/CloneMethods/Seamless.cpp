@@ -171,7 +171,7 @@ void Seamless::build_poisson_equation()
                     triplets.emplace_back(
                         i,
                         index_map.at(n_pos),
-                        1.0);  // i: row index in the sparse matrix, second
+                        -1.0);  // i: row index in the sparse matrix, second
                                // term represents the col index
                 }
                 // neighbor not in the mask
@@ -187,7 +187,7 @@ void Seamless::build_poisson_equation()
             }
         }
         // set the center_coeff
-        triplets.emplace_back(i, i, -neighbor_count);
+        triplets.emplace_back(i, i, neighbor_count);
 
         // consider the gradient of src image
         for (int c = 0; c < 3; ++c)
@@ -214,7 +214,7 @@ void Seamless::build_poisson_equation()
     // 在边界条件处理处增加详细日志
     logger.info() << "Poisson equation built successfully. Non-zero elements: "
                   << A_.nonZeros() << ", Matrix size: " << A_.rows() << "x"
-                  << A_.cols();
+                  << A_.cols() << std::endl;
 }
 
 // 矩阵构建完成后增加总结日志

@@ -56,6 +56,11 @@ void TargetImageWidget::set_seamless()
     clone_type_ = kSeamlessType;
 }
 
+void TargetImageWidget::set_mixgradient()
+{
+    clone_type_ = kMixgradient;
+}
+
 void TargetImageWidget::restore()
 {
     *data_ = *back_up_;
@@ -66,7 +71,6 @@ void TargetImageWidget::set_paste()
 {
     clone_type_ = kPaste;
 }
-
 
 void TargetImageWidget::clone()
 {
@@ -90,8 +94,7 @@ void TargetImageWidget::clone()
 
     switch (clone_type_)
     {
-        case USTC_CG::TargetImageWidget::kDefault:
-            break;
+        case USTC_CG::TargetImageWidget::kDefault: break;
         case USTC_CG::TargetImageWidget::kPaste:
         {
             restore();
@@ -127,11 +130,13 @@ void TargetImageWidget::clone()
 
             // 1. 获取源图像、mask图像、offset等参数
             auto src = source_image_->get_data();
-            int offset_x = static_cast<int>(mouse_position_.x) - static_cast<int>(source_image_->get_position().x);
-            int offset_y = static_cast<int>(mouse_position_.y) - static_cast<int>(source_image_->get_position().y);
+            int offset_x = static_cast<int>(mouse_position_.x) -
+                           static_cast<int>(source_image_->get_position().x);
+            int offset_y = static_cast<int>(mouse_position_.y) -
+                           static_cast<int>(source_image_->get_position().y);
 
             // 2. 创建 Seamless 对象，并调用其 solve() 函数
-            Seamless seamless_clone(data_, src, mask, offset_x, offset_y);
+            Seamless seamless_clone(src, data_, mask, offset_x, offset_y);
             auto result = seamless_clone.solve();
 
             // 3. 将结果图像更新到目标图像中
@@ -144,10 +149,23 @@ void TargetImageWidget::clone()
         {
             restore();
 
+            // 1. 获取源图像、mask图像、offset等参数
+            auto src = source_image_->get_data();
+            int offset_x = static_cast<int>(mouse_position_.x) -
+                           static_cast<int>(source_image_->get_position().x);
+            int offset_y = static_cast<int>(mouse_position_.y) -
+                           static_cast<int>(source_image_->get_position().y);
+
+            // 2. 创建 Seamless 对象，并调用其 solve() 函数
+            MixGradient mixgradient_clone(src, data_, mask, offset_x, offset_y);
+            auto result = mixgradient_clone.solve();
+
+            // 3. 将结果图像更新到目标图像中
+            *data_ = *result;
+
             break;
         }
-        default:
-            break;
+        default: break;
     }
 
     update();
@@ -183,4 +201,4 @@ ImVec2 TargetImageWidget::mouse_pos_in_canvas() const
     ImGuiIO& io = ImGui::GetIO();
     return ImVec2(io.MousePos.x - position_.x, io.MousePos.y - position_.y);
 }
-} // namespace USTC_CG
+}  // namespace USTC_CG

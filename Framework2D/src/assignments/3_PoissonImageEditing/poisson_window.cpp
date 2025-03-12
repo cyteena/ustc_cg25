@@ -103,9 +103,11 @@ void PoissonWindow::draw_toolbar()
             "seamless the selected region to the target image."
         );
 
-        if (ImGui::MenuItem("Misgradient") && p_target_ && p_source_)
+        ImGui::Separator();
+
+        if (ImGui::MenuItem("Mixgradient") && p_target_ && p_source_)
         {
-            p_target_->set_seamless();
+            p_target_->set_mixgradient();
         }
         add_tooltips(
             "Press this button and then click in the target image, to "

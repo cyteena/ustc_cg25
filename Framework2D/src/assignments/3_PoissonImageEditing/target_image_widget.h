@@ -3,6 +3,7 @@
 #include "source_image_widget.h"
 #include "common/image_widget.h"
 #include "CloneMethods/Seamless.h"
+#include "CloneMethods/Mixgradient.h"
 
 namespace USTC_CG
 {

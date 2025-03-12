@@ -2,6 +2,7 @@
 
 #include "common/image_widget.h"
 #include "shapes/rect.h"
+#include "shapes/freehand.h"
 
 namespace USTC_CG
 {
@@ -12,7 +13,8 @@ class SourceImageWidget : public ImageWidget
     enum RegionType
     {
         kDefault = 0,
-        kRect = 1
+        kRect = 1,
+        kFreehand = 2,
     };
 
     explicit SourceImageWidget(
@@ -48,10 +50,11 @@ class SourceImageWidget : public ImageWidget
     // Fill the selected region by the picking the pixels in the selected shape
     void update_selected_region();
 
-    RegionType region_type_ = kRect;
+    RegionType region_type_ = kFreehand;
     // The shape we draw in the source image to select the region.
     // By default, we use a rectangle to select the region.
     // HW3_TODO(optional): You can add more shapes for region selection.
+    std::unique_ptr<Freehand> selected_shape_;
     std::unique_ptr<Rect> selected_shape_;
     // The selected region in the source image, this would be a binary mask.
     // The **size** of the mask should be the same as the source image.

@@ -98,6 +98,12 @@ void SourceImageWidget::mouse_click_event()
                     std::make_unique<Rect>(start_.x, start_.y, end_.x, end_.y);
                 break;
             }
+            case USTC_CG::SourceImageWidget::kFreehand:
+            {
+                selected_shape_ =
+                    std::make_unique<Freehand>();
+            break;
+            }
             default: break;
         }
     }
