@@ -135,18 +135,16 @@ void MixGradient::build_poisson_equation()
     A_.setFromTriplets(triplets.begin(), triplets.end());
 
     // 在边界条件处理处增加详细日志
-    logger.info() << "Poisson equation built successfully. Non-zero elements: "
+    logger.debug() << "Poisson equation built successfully. Non-zero elements: "
                   << A_.nonZeros() << ", Matrix size: " << A_.rows() << "x"
                   << A_.cols() << std::endl;
-    std::cout << "MixGradient::build_poisson_equation() called" << std::endl;
 }
 
 std::shared_ptr<Image> MixGradient::solve()
 {
     // TODO: 实现 Mix Gradient 的 solve 算法
     // 在这里实现你的 Mix Gradient 特定的求解逻辑
-    std::cout << "MixGradient::solve() called" << std::endl;
-    logger.setLogLevel(LogLevel::Trace);
+    logger.setLogLevel(LogLevel::Info);
 
     auto result = get_target_image();
 

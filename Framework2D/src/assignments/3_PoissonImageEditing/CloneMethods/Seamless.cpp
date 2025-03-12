@@ -13,7 +13,7 @@ using uchar = unsigned char;
 
 std::shared_ptr<Image> Seamless::solve()
 {
-    logger.setLogLevel(LogLevel::Trace);
+    logger.setLogLevel(LogLevel::Info);
 
     auto result = get_target_image();
 
@@ -212,7 +212,7 @@ void Seamless::build_poisson_equation()
     A_.setFromTriplets(triplets.begin(), triplets.end());
 
     // 在边界条件处理处增加详细日志
-    logger.info() << "Poisson equation built successfully. Non-zero elements: "
+    logger.debug() << "Poisson equation built successfully. Non-zero elements: "
                   << A_.nonZeros() << ", Matrix size: " << A_.rows() << "x"
                   << A_.cols() << std::endl;
 }
@@ -240,7 +240,7 @@ void Seamless::precompute_matrix()
             throw std::runtime_error("Matrix decomposition failed");
         }
 
-        logger.info() << "Matrix decomposed successfully. Non-zero elements: "
+        logger.debug() << "Matrix decomposed successfully. Non-zero elements: "
                       << A_.nonZeros();
     }
     catch (const std::exception& e)
