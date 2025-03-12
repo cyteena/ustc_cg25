@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include "shapes/rect.h"
+#include "shapes/freehand.h"
 
 namespace USTC_CG
 {
@@ -94,17 +96,16 @@ void SourceImageWidget::mouse_click_event()
             case USTC_CG::SourceImageWidget::kDefault: break;
             case USTC_CG::SourceImageWidget::kRect:
             {
-                selected_shape_ =
-                    std::make_unique<Rect>(start_.x, start_.y, end_.x, end_.y);
+                selected_shape_ = std::make_unique<Rect>(start_.x, start_.y, end_.x, end_.y);
                 break;
             }
             case USTC_CG::SourceImageWidget::kFreehand:
             {
-                selected_shape_ =
-                    std::make_unique<Freehand>();
-            break;
+                selected_shape_ = std::make_unique<Freehand>();
+                break;
             }
-            default: break;
+            default:
+                break;
         }
     }
 }
@@ -160,7 +161,14 @@ void SourceImageWidget::update_selected_region()
     {
         int x = pixel.first;
         int y = pixel.second;
-        selected_region_mask_->set_pixel(x, y, { 255 });
+        // 检查 x 和 y 是否在 selected_region_mask_ 的边界内
+        if (x >= 0 && x < selected_region_mask_->width() && y >= 0 && y < selected_region_mask_->height())
+        {
+            // Image::set_pixel 函数需要一个 std::vector<unsigned char> 类型的参数，而原始代码 {255} 只是一个初始化列表。
+            // 为了让类型匹配，需要显式地构造一个 std::vector<unsigned char> 对象。
+            // 由于图像只有一个通道，所以向量中只需要一个元素。
+            selected_region_mask_->set_pixel(x, y, std::vector<unsigned char>{ 255 });
+        }
     }
 }
 }  // namespace USTC_CG

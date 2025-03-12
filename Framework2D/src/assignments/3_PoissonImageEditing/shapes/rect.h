@@ -36,7 +36,7 @@ class Rect : public Shape
 
     // Get the interior rasterized pixels of the rectangle
     // Returns the array of pixel coordinates that are inside the rectangle
-    std::vector<std::pair<int, int>> get_interior_pixels() const;
+    std::vector<std::pair<int, int>> get_interior_pixels() const override;
 
    private:
     // Coordinates of the top-left and bottom-right corners of the rectangle

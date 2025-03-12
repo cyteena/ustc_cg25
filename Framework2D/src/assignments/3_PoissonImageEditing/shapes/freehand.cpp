@@ -46,15 +46,20 @@ std::vector<std::pair<int, int>> Freehand::get_interior_pixels() const
         std::vector<int> intersections;
         
         // Find intersections with each edge
-        for (size_t i = 0; i < x_list_.size(); i++) {
-            size_t j = (i + 1) % x_list_.size();
+        for (size_t i = 0; i < y_list_.size(); i++) {
+            size_t j = (i + 1) % y_list_.size();
             
             if ((y_list_[i] <= y && y_list_[j] > y) || 
                 (y_list_[j] <= y && y_list_[i] > y)) {
                 
-                float x = x_list_[i] + (y - y_list_[i]) * 
-                         (x_list_[j] - x_list_[i]) / 
-                         (y_list_[j] - y_list_[i]);
+                float x;
+                if (y_list_[j] != y_list_[i]) {
+                    x = x_list_[i] + (y - y_list_[i]) *
+                                     (x_list_[j] - x_list_[i]) /
+                                     (y_list_[j] - y_list_[i]);
+                } else {
+                    continue; // Skip this edge if it's horizontal
+                }
                 
                 intersections.push_back(static_cast<int>(x));
             }

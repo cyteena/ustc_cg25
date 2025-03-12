@@ -21,6 +21,6 @@ class Freehand : public Shape
 
     void update(float x, float y) override;
 
-    std::vector<std::pair<int,int>> get_interior_pixels() const;
+    std::vector<std::pair<int, int>> get_interior_pixels() const override;
 };
 }  // namespace USTC_CG
