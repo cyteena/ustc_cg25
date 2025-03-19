@@ -2,8 +2,9 @@
 
 #include <algorithm>
 #include <cmath>
-#include "shapes/rect.h"
+
 #include "shapes/freehand.h"
+#include "shapes/rect.h"
 
 namespace USTC_CG
 {
@@ -63,7 +64,7 @@ void SourceImageWidget::select_region()
                             .line_thickness = 2.0f };
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         selected_shape_->draw(s);
-    }  
+    }
 }
 
 std::shared_ptr<Image> SourceImageWidget::get_region_mask()
@@ -83,7 +84,7 @@ ImVec2 SourceImageWidget::get_position() const
 
 void SourceImageWidget::mouse_click_event()
 {
-    // Start drawing the region 
+    // Start drawing the region
     if (!draw_status_)
     {
         draw_status_ = true;
@@ -96,7 +97,8 @@ void SourceImageWidget::mouse_click_event()
             case USTC_CG::SourceImageWidget::kDefault: break;
             case USTC_CG::SourceImageWidget::kRect:
             {
-                selected_shape_ = std::make_unique<Rect>(start_.x, start_.y, end_.x, end_.y);
+                selected_shape_ =
+                    std::make_unique<Rect>(start_.x, start_.y, end_.x, end_.y);
                 break;
             }
             case USTC_CG::SourceImageWidget::kFreehand:
@@ -104,8 +106,7 @@ void SourceImageWidget::mouse_click_event()
                 selected_shape_ = std::make_unique<Freehand>();
                 break;
             }
-            default:
-                break;
+            default: break;
         }
     }
 }
@@ -162,12 +163,15 @@ void SourceImageWidget::update_selected_region()
         int x = pixel.first;
         int y = pixel.second;
         // 检查 x 和 y 是否在 selected_region_mask_ 的边界内
-        if (x >= 0 && x < selected_region_mask_->width() && y >= 0 && y < selected_region_mask_->height())
+        if (x >= 0 && x < selected_region_mask_->width() && y >= 0 &&
+            y < selected_region_mask_->height())
         {
-            // Image::set_pixel 函数需要一个 std::vector<unsigned char> 类型的参数，而原始代码 {255} 只是一个初始化列表。
-            // 为了让类型匹配，需要显式地构造一个 std::vector<unsigned char> 对象。
-            // 由于图像只有一个通道，所以向量中只需要一个元素。
-            selected_region_mask_->set_pixel(x, y, std::vector<unsigned char>{ 255 });
+            // Image::set_pixel 函数需要一个 std::vector<unsigned char>
+            // 类型的参数，而原始代码 {255} 只是一个初始化列表。
+            // 为了让类型匹配，需要显式地构造一个 std::vector<unsigned char>
+            // 对象。 由于图像只有一个通道，所以向量中只需要一个元素。
+            selected_region_mask_->set_pixel(
+                x, y, std::vector<unsigned char>{ 255 });
         }
     }
 }
