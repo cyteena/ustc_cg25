@@ -24,7 +24,6 @@ NODE_DECLARATION_FUNCTION(min_surf)
 {
     // Input-1: Original 3D mesh with boundary
     b.add_input<Geometry>("Input");
-
     /*
     ** NOTE: You can add more inputs or outputs if necessary. For example, in
     *some cases,
