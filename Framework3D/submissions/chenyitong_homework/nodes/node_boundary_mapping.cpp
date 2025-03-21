@@ -184,7 +184,7 @@ NODE_EXECUTION_FUNCTION(square_boundary_mapping)
      ** In this task, you are required to map the boundary of the mesh to a
      ** square shape while ensuring the internal vertices remain unaffected.
      */
-    
+
     // 1. Find a boundary half-edge as starting point
     std::vector<OpenMesh::VertexHandle> boundary_vertices;
     OpenMesh::HalfedgeHandle start_he;
@@ -216,47 +216,52 @@ NODE_EXECUTION_FUNCTION(square_boundary_mapping)
     // 3. Map boundary vertices to a square
     int num_boundary_vertices = boundary_vertices.size();
     log::info("Number of boundary vertices: %d", num_boundary_vertices);
-    
+
     // 计算周长并归一化到单位正方形
     double total_length = 0.0;
     std::vector<double> cumulative_lengths;
     int vertices_per_side = num_boundary_vertices / 4;
     int remainder = num_boundary_vertices % 4;
-    
+
     // Adjust vertices per side to account for remainder
     std::vector<int> side_counts(4, vertices_per_side);
-    for (int i = 0; i < remainder; ++i) {
+    for (int i = 0; i < remainder; ++i)
+    {
         side_counts[i]++;
     }
-    
+
     // Map vertices to square sides
     int vertex_index = 0;
-    
+
     // 将顶点按周长比例分配到四个边
     constexpr double side_length = 1.0; // 单位正方形边长
     double accumulated = 0.0;
-    
+
     // 修正顶点分配逻辑（删除所有跳过顶点的条件判断）
     // Bottom edge: (x, y) = (t, 0)
-    for (int i = 0; i < side_counts[0]; ++i) {
+    for (int i = 0; i < side_counts[0]; ++i)
+    {
         double t = static_cast<double>(i) / (side_counts[0] - 1);
         halfedge_mesh->point(boundary_vertices[vertex_index++]) = OpenMesh::Vec3d(t, 0.0, 0.0);
     }
 
     // Right edge: (x, y) = (1, t)
-    for (int i = 0; i < side_counts[1]; ++i) {
+    for (int i = 0; i < side_counts[1]; ++i)
+    {
         double t = static_cast<double>(i) / (side_counts[1] - 1);
         halfedge_mesh->point(boundary_vertices[vertex_index++]) = OpenMesh::Vec3d(1.0, t, 0.0);
     }
 
     // Top edge: (x, y) = (1-t, 1)
-    for (int i = 0; i < side_counts[2]; ++i) {
+    for (int i = 0; i < side_counts[2]; ++i)
+    {
         double t = static_cast<double>(i) / (side_counts[2] - 1);
         halfedge_mesh->point(boundary_vertices[vertex_index++]) = OpenMesh::Vec3d(1.0 - t, 1.0, 0.0);
     }
 
     // Left edge: (x, y) = (0, 1-t)
-    for (int i = 0; i < side_counts[3]; ++i) {
+    for (int i = 0; i < side_counts[3]; ++i)
+    {
         double t = static_cast<double>(i) / (side_counts[3] - 1);
         halfedge_mesh->point(boundary_vertices[vertex_index++]) = OpenMesh::Vec3d(0.0, 1.0 - t, 0.0);
     }
