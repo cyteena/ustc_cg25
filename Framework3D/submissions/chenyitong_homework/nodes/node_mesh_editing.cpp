@@ -8,6 +8,7 @@
 #include <iostream>	  // 标准输出头文件
 #include <stdexcept>  // 用于 std::runtime_error
 #include "io/json.hpp"
+#include <map>
 
 // Eigen 库头文件
 #include <Eigen/Sparse>
@@ -24,6 +25,61 @@
 ** @brief HW5_Laplacian_Surface_Editing
 ** (原始注释)
 */
+namespace OpenMeshUtils
+{
+    // Calculates the cotangent of the angle opposite the given halfedge 'he'
+    // within the face attached to 'he'.
+    template <typename MeshT>
+    double cotangent_weight(const MeshT &mesh, typename MeshT::HalfedgeHandle he)
+    {
+        // Check if the halfedge and its face are valid
+        if (!mesh.is_valid_handle(he) || mesh.is_boundary(he)) {
+            return 0.0; // No valid opposite angle for boundary halfedges
+        }
+
+        // Get the vertices: v0 -> v1 is the edge itself, v2 is the opposite vertex
+        const auto v0h = mesh.from_vertex_handle(he);
+        const auto v1h = mesh.to_vertex_handle(he);
+        const auto v2h = mesh.to_vertex_handle(mesh.next_halfedge_handle(he)); // Vertex opposite he
+
+        if (!mesh.is_valid_handle(v0h) || !mesh.is_valid_handle(v1h) || !mesh.is_valid_handle(v2h)) {
+             return 0.0; // Invalid vertex handle encountered
+        }
+
+        const auto v0 = mesh.point(v0h);
+        const auto v1 = mesh.point(v1h);
+        const auto v2 = mesh.point(v2h);
+
+        // Calculate the two edge vectors originating from the opposite vertex (v2)
+        // Use OpenMesh vector type consistent with the function's operations
+        const typename MeshT::Point e1 = v0 - v2; // Vector from v2 to v0
+        const typename MeshT::Point e2 = v1 - v2; // Vector from v2 to v1
+
+        // Calculate dot product and the norm of the cross product
+        const double dot_product = OpenMesh::dot(e1, e2);
+        // Use double for cross product norm to maintain precision for division
+        const double cross_product_norm = OpenMesh::cross(e1, e2).norm();
+
+        // Avoid division by zero or near-zero for degenerate triangles
+        const double epsilon = 1e-9; // Use a small epsilon
+        if (cross_product_norm < epsilon) {
+            // Consider degenerate triangles as having infinite cotangent (or a very large weight).
+            // Returning 0 might be safer in practice to avoid extreme weights. Choose one.
+             // return 1.0 / epsilon; // Very large weight (original logic seemed to imply this)
+             return 0.0; // Safer alternative: ignore degenerate triangles for weight calculation
+        }
+
+        // Cotangent = dot(e1, e2) / |cross(e1, e2)|
+        return dot_product / cross_product_norm;
+    }
+
+} // namespace OpenMeshUtils
+
+
+enum class LaplacianWeightType {
+	UNIFORM,
+	COTANGENT
+};
 
 // --- 定义用于存储预计算结果的结构体 ---
 // 这个结构体将持久化存储在节点实例中 (通过 GCore 框架)
@@ -41,6 +97,7 @@ struct SolverStorage {
     size_t num_vertices = 0;
     size_t control_indices_hash = 0;
     double constraint_weight = 1.0;
+	bool use_cotangent_weights = false; // <<< Store the type used for last compute (true=Cotangent, false=Uniform)
     bool solver_ready = false; // Status flag (reset by deserialize)
 
     // --- Serialization Interface using nlohmann::json ---
@@ -161,6 +218,8 @@ NODE_DECLARATION_FUNCTION(mesh_editing)
 	b.add_input<pxr::VtArray<pxr::GfVec3f>>("Changed vertices");
 	// Input-3: 控制点的索引列表
 	b.add_input<std::vector<size_t>>("Control Points Indices");
+	// Input-4: UNIFORM OR COTANGENT
+	b.add_input<bool>("Use Cotangent Weights").default_val(false);
 
 	// Optional: 可以添加约束权重作为可调节的输入参数
 	// b.add_input<double>("Constraint Weight", 1.0);
@@ -177,6 +236,7 @@ NODE_EXECUTION_FUNCTION(mesh_editing)
 	auto input_geom = params.get_input<Geometry>("Original mesh");
 	pxr::VtArray<pxr::GfVec3f> changed_vertices = params.get_input<pxr::VtArray<pxr::GfVec3f>>("Changed vertices");
 	std::vector<size_t> control_points_indices = params.get_input<std::vector<size_t>>("Control Points Indices");
+	bool use_cotangent_input = params.get_input<bool>("Use Cotangent Weights");
 	// double current_constraint_weight = params.get_input<double>("Constraint Weight"); // 如果添加了权重输入
 
 	// --- 2. 访问/获取持久化存储 ---
@@ -227,7 +287,8 @@ NODE_EXECUTION_FUNCTION(mesh_editing)
 		// return false;
 	}
 
-	std::cout << "Mesh Editing Node: Processing " << n_vertices << " vertices with " << n_control_points << " control points." << std::endl;
+    std::cout << "Mesh Editing Node: " << n_vertices << " vertices, " << n_control_points << " controls. Requested weights: "
+              << (use_cotangent_input ? "Cotangent" : "Uniform") << std::endl;
 
 	// --- 5. 检查是否需要重新进行预计算 ---
 	//    预计算包括构建 L, A, Delta 并对 A 进行 QR 分解，这是最耗时的部分
@@ -267,7 +328,14 @@ NODE_EXECUTION_FUNCTION(mesh_editing)
 		}
 	}
 
-	// c) 约束权重是否改变? (如果权重是可调参数)
+	// c) Weight type selection change? <<< New Check
+	if (!needs_recompute && use_cotangent_input != storage.use_cotangent_weights) {
+		needs_recompute = true;
+		std::cout << "  Recompute Trigger: Weight type changed (User: " << use_cotangent_input
+					<< ", Stored: " << storage.use_cotangent_weights << ")." << std::endl;
+	}
+
+	// d) 约束权重是否改变? (如果权重是可调参数)
 	// if (!needs_recompute && std::abs(current_constraint_weight - storage.constraint_weight) > std::numeric_limits<double>::epsilon()) {
 	//     needs_recompute = true;
 	//     std::cout << "  Recompute Trigger: Constraint weight changed." << std::endl;
@@ -277,7 +345,8 @@ NODE_EXECUTION_FUNCTION(mesh_editing)
 	//    (构建 L, Delta, A; 计算 QR 分解)
 	if (needs_recompute)
 	{
-		std::cout << "Performing full solver precomputation (using SparseQR)..." << std::endl;
+		std::cout << "Performing full solver precomputation QR (Weights: "
+                  << (use_cotangent_input ? "Cotangent" : "Uniform") << ")..." << std::endl;
 		storage.solver_ready = false; // 在成功完成前标记为未就绪
 
 		// --- a) 获取原始顶点位置 V_orig (使用 double 提高精度) ---
@@ -297,32 +366,80 @@ NODE_EXECUTION_FUNCTION(mesh_editing)
 		std::vector<Eigen::Triplet<double>> L_triplets;
 		L_triplets.reserve(n_vertices * 7); // 预估内存 (平均度数约为 6)
 
-		for (auto vh : mesh->vertices())
-		{
-			size_t i = vh.idx();
-			double degree = 0.0; // 顶点度数
+		if (use_cotangent_input) {
+            // --- Cotangent Weights Calculation (Adapted from min_surf) ---
+            for (auto v_it = mesh->vertices_begin(); v_it != mesh->vertices_end(); ++v_it)
+            {
+                // Get index 'i' for the current vertex v_it
+                // int i = vertex_indices[*v_it]; // Use map if built
+                 size_t i = v_it->idx();      // Or use direct index
 
-			// 遍历邻接顶点
-			for (auto vv_it = mesh->vv_iter(vh); vv_it.is_valid(); ++vv_it)
-			{
-				size_t j = vv_it->idx();
-				// 确保不是自身 (虽然 vv_iter 一般不包含自身)
-				if (i != j)
-				{
-					L_triplets.emplace_back(i, j, -1.0); // 非对角线为 -1
-					degree += 1.0;
-				}
-			}
-			// 设置对角线元素 (度数)
-			// 即使是孤立点 (degree=0)，也添加 (i, i, 0.0) 占位符
-			L_triplets.emplace_back(i, i, degree);
-			if (degree == 0)
-			{
-				std::cout << "  Warning: Vertex " << i << " is isolated (degree 0)." << std::endl;
-			}
-		}
+                // For Laplacian Editing, ALL vertices contribute, even boundary ones
+                // (Unlike Tutte/Minimal Surfaces where boundary rows are identity)
+
+                double weight_sum = 0.0; // For diagonal L_ii
+
+                // Iterate over outgoing halfedges from vertex i
+                for (auto voh_it = mesh->voh_iter(*v_it); voh_it.is_valid(); ++voh_it)
+                {
+                    auto he_ij = *voh_it; // Halfedge from i to j
+                    auto he_ji = mesh->opposite_halfedge_handle(he_ij); // Halfedge from j to i
+
+                    auto v_j_h = mesh->to_vertex_handle(he_ij); // Neighbor vertex j handle
+                    // int j = vertex_indices[v_j_h]; // Use map if built
+                    size_t j = v_j_h.idx();         // Or use direct index
+
+                    // Calculate cotangents of opposite angles using the helper function
+                    double cot_alpha = 0.0, cot_beta = 0.0;
+
+                    // Angle alpha is opposite edge ij in the face containing he_ij
+                    if (!mesh->is_boundary(he_ij)) {
+                        cot_alpha = OpenMeshUtils::cotangent_weight(*mesh, he_ij);
+                    }
+
+                    // Angle beta is opposite edge ij (or ji) in the face containing he_ji
+                    if (mesh->is_valid_handle(he_ji) && !mesh->is_boundary(he_ji)) {
+                        cot_beta = OpenMeshUtils::cotangent_weight(*mesh, he_ji);
+                    }
+
+                    // Standard cotangent weight formula
+                    double weight = (cot_alpha + cot_beta) * 0.5;
+
+                    // Clamp negative weights to zero (safer for editing, adjust if needed)
+                    weight = std::max(0.0, weight);
+                    // Optional: clamp large weights from degenerate triangles if helper returns large values
+                    // weight = std::min(weight, 1e6); // Example clamp
+
+                    // Add off-diagonal entry L_ij = -w_ij
+                    L_triplets.emplace_back(i, j, -weight);
+
+                    // Accumulate sum for diagonal entry L_ii = sum_j w_ij
+                    weight_sum += weight;
+                }
+
+                // Add diagonal entry L_ii
+                // Ensure diagonal is non-negative if weights were clamped
+                // weight_sum = std::max(0.0, weight_sum);
+                L_triplets.emplace_back(i, i, weight_sum);
+            } // End vertex iteration for cotangent
+
+        } else {
+            // --- Uniform Weights Calculation (Original code) ---
+            for (auto vh = mesh->vertices_begin(); vh != mesh->vertices_end(); vh++) {
+                size_t i = vh->idx(); double degree = 0.0;
+                for (auto vv_it = mesh->vv_iter(vh); vv_it.is_valid(); ++vv_it) {
+                    size_t j = vv_it->idx();
+                    if (i != j) {
+                        L_triplets.emplace_back(i, j, -1.0);
+                        degree += 1.0;
+                    }
+                }
+                L_triplets.emplace_back(i, i, degree);
+            }
+        } // End if/else for weight type
+
 		L.setFromTriplets(L_triplets.begin(), L_triplets.end());
-		L.makeCompressed(); // 压缩存储，提高后续计算效率
+        L.makeCompressed();
 
 		// --- c) 计算并存储 Delta = L * V_orig ---
 		//    Delta 是原始形状的 "拉普拉斯特征"
