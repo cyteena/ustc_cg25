@@ -50,7 +50,7 @@ NODE_DECLARATION_FUNCTION(arap)
     */
 
     // Output-1: The UV coordinate of the mesh, provided by ARAP algorithm
-    b.add_output<pxr::GfVec2f>("OutputUV");
+    b.add_output<pxr::VtArray<pxr::GfVec2f>>("OutputUV");
 }
 
 NODE_EXECUTION_FUNCTION(arap)
