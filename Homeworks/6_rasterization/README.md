@@ -9,7 +9,7 @@
 ## 作业递交
 
 - 递交内容：程序代码、实验报告及 `stage.usdc` 文件，见[提交文件格式](#提交文件格式)
-- 递交时间：2025年4月6日（周日）晚
+- 递交时间：2025年4月13日（周日）晚
 
 ## 要求
 - 实现 Blinn-Phong 着色模型 ([参考资料](https://learnopengl-cn.github.io/02%20Lighting/03%20Materials/))

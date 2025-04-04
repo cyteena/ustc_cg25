@@ -16,8 +16,8 @@ GPGPU被广泛使用在各种任务中，是目前火热的人工智能领域最
 3. 在光栅化节点中实现法线贴图。[法线贴图资料](https://learnopengl-cn.github.io/05%20Advanced%20Lighting/04%20Normal%20Mapping/)。
 
 ### Shadow Mapping
-1. 修改shadow mapping节点以及对应的着色器
-2. 修改延迟着色节点以及对应的着色器
+1. 修改shadow mapping节点以及对应的着色器（如果你想要对除了SphereLight以外的其他光源进行支持）
+2. 修改延迟着色节点以及对应的着色器，实现对Shadow map的使用
 
 ### PCSS (Optional)
 修改或拷贝一份blinn_phong.fs，按注释和参考资料完成PCSS
