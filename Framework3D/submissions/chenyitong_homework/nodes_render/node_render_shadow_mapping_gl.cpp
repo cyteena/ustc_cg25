@@ -14,8 +14,8 @@ NODE_DECLARATION_FUNCTION(shadow_mapping)
 {
     b.add_input<int>("resolution").default_val(1024).min(256).max(4096);
     b.add_input<float>("ortho_size").default_val(20.0f).min(1.0f).max(1000.0f);
-    b.add_input<float>("near_plane").default_val(1.0f).min(0.01f);
-    b.add_input<float>("far_plane").default_val(25.0f).min(1.0f);
+    b.add_input<float>("near_plane").default_val(1.0f).min(0.1f).max(2.0f);
+    b.add_input<float>("far_plane").default_val(25.0f).min(1.0f).max(100.0f);
     b.add_input<float>("perspective_fov").default_val(120.0f).min(10.0f).max(160.0f);
 
     b.add_input<std::string>("Shader").default_val("shaders/shadow_mapping.fs");
@@ -36,7 +36,7 @@ NODE_EXECUTION_FUNCTION(shadow_mapping)
     // shadow_map_texture_desc.array_size = 1;
     shadow_map_texture_desc.size = GfVec2i(resolution);
     // shadow_map_texture_desc.format = HdFormatUNorm8Vec4;
-    shadow_map_texture_desc.format = HdFormatFloat32;
+    shadow_map_texture_desc.format = HdFormatFloat32UInt8;
     auto shadow_map_texture = resource_allocator.create(shadow_map_texture_desc);
 
     auto shaderPath = params.get_input<std::string>("Shader");
@@ -107,8 +107,8 @@ NODE_EXECUTION_FUNCTION(shadow_mapping)
                 // 视图矩阵：我们需要一个“虚拟”位置来设置lookat
                 // 位置应该沿着光照的反方向，距离场景足够远
                 // LooAt 的目标点可以是场景中心
-                GfVec3f virtual_pos = -light_direction * (far_plane * 0.5f);
                 GfVec3f look_at_target(0, 0, 0); // 看向场景中心
+                GfVec3f virtual_pos = look_at_target - light_direction * (far_plane * 0.5f);
                 GfVec3f up_vector(0, 1, 0);
                 // if (fabs(light_direction.Dot(up_vector)) > 0.999f)
                 // {
@@ -202,6 +202,15 @@ NODE_EXECUTION_FUNCTION(shadow_mapping)
             // glClear(
             //     GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT |
             //     GL_STENCIL_BUFFER_BIT);
+
+            // 检查帧缓冲状态 - 放在这里！
+            GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+            if (status != GL_FRAMEBUFFER_COMPLETE) {
+                glDeleteFramebuffers(1, &framebuffer);
+                throw std::runtime_error("Framebuffer incomplete for light " + 
+                                        std::to_string(light_id) + ": " + 
+                                        std::to_string(status));
+            }
 
             for (int mesh_id = 0; mesh_id < meshes.size(); ++mesh_id)
             {
