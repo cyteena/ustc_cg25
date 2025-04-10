@@ -83,9 +83,9 @@ NODE_EXECUTION_FUNCTION(shadow_mapping)
 
             bool has_light = false;
 
-            // Output current light type for debugging
-            std::cout << "Light ID: " << light_id << ", Type: " 
-                      << lights[light_id]->GetLightType().GetText() << std::endl;
+            // // Output current light type for debugging
+            // std::cout << "Light ID: " << light_id << ", Type: " 
+            //           << lights[light_id]->GetLightType().GetText() << std::endl;
                       
             if (lights[light_id]->GetLightType() ==
                 HdPrimTypeTokens->sphereLight)
@@ -106,28 +106,40 @@ NODE_EXECUTION_FUNCTION(shadow_mapping)
             }
             else if (lights[light_id]->GetLightType() == HdPrimTypeTokens->distantLight)
             {
-                GfVec3f light_direction = GfVec3f(light_world_transform.GetRow3(2)).GetNormalized(); // 变换矩阵的z轴
+                // GfVec3f light_direction = GfVec3f(light_world_transform.GetRow3(2)).GetNormalized(); // 变换矩阵的z轴
 
                 // 视图矩阵：我们需要一个“虚拟”位置来设置lookat
                 // 位置应该沿着光照的反方向，距离场景足够远
                 // LooAt 的目标点可以是场景中心
-                GfVec3f look_at_target(0, 0, 0); // 看向场景中心
-                GfVec3f virtual_pos = look_at_target - light_direction * (far_plane * 0.5f);
-                GfVec3f up_vector(0, 1, 0);
-                // if (fabs(light_direction.Dot(up_vector)) > 0.999f)
-                // {
-                //     up_vector = GfVec3f(0, 0, 1); // 如果平行，尝试 Z 轴向上
-                // }
-                light_view_mat = GfMatrix4f().SetLookAt(virtual_pos, look_at_target, up_vector);
+                // GfVec3f look_at_target(0, 0, 0); // 看向场景中心
+                // GfVec3f virtual_pos = look_at_target - light_direction * (far_plane * 0.5f);
+                // GfVec3f up_vector(0, 1, 0);
+                // // if (fabs(light_direction.Dot(up_vector)) > 0.999f)
+                // // {
+                // //     up_vector = GfVec3f(0, 0, 1); // 如果平行，尝试 Z 轴向上
+                // // }
+                // light_view_mat = GfMatrix4f().SetLookAt(virtual_pos, look_at_target, up_vector);
 
-                // 投影矩阵
-                float half_size = ortho_size * 0.5f;
+                // // 投影矩阵
+                // float half_size = ortho_size * 0.5f;
+                // GfFrustum frustum;
+                // frustum.SetOrthographic(
+                //     -half_size, half_size, // left, right
+                //     -half_size, half_size, // bottom, top
+                //     near_plane, far_plane);
+                // light_projection_mat = GfMatrix4f(frustum.ComputeProjectionMatrix());
+                // has_light = true;
                 GfFrustum frustum;
-                frustum.SetOrthographic(
-                    -half_size, half_size, // left, right
-                    -half_size, half_size, // bottom, top
-                    near_plane, far_plane);
-                light_projection_mat = GfMatrix4f(frustum.ComputeProjectionMatrix());
+                GfVec3f light_position = {light_params.GetPosition()[0],
+                                          light_params.GetPosition()[1],
+                                          light_params.GetPosition()[2]};
+
+                light_view_mat = GfMatrix4f().SetLookAt(
+                    light_position, GfVec3f(0, 0, 0), GfVec3f(0, 0, 1));
+                frustum.SetPerspective(perspective_fov, 1.0, near_plane, far_plane);
+                light_projection_mat =
+                    GfMatrix4f(frustum.ComputeProjectionMatrix());
+
                 has_light = true;
             }
             else if (lights[light_id]->GetLightType() == HdPrimTypeTokens->rectLight || lights[light_id]->GetLightType() == HdPrimTypeTokens->diskLight)
