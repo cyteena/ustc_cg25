@@ -83,6 +83,10 @@ NODE_EXECUTION_FUNCTION(shadow_mapping)
 
             bool has_light = false;
 
+            // Output current light type for debugging
+            std::cout << "Light ID: " << light_id << ", Type: " 
+                      << lights[light_id]->GetLightType().GetText() << std::endl;
+                      
             if (lights[light_id]->GetLightType() ==
                 HdPrimTypeTokens->sphereLight)
             {
@@ -114,7 +118,7 @@ NODE_EXECUTION_FUNCTION(shadow_mapping)
                 // {
                 //     up_vector = GfVec3f(0, 0, 1); // 如果平行，尝试 Z 轴向上
                 // }
-                light_view_mat.SetLookAt(virtual_pos, look_at_target, up_vector);
+                light_view_mat = GfMatrix4f().SetLookAt(virtual_pos, look_at_target, up_vector);
 
                 // 投影矩阵
                 float half_size = ortho_size * 0.5f;
@@ -146,7 +150,7 @@ NODE_EXECUTION_FUNCTION(shadow_mapping)
                 //         up_vector = GfVec3f(0, 1, 0); // 或者 (0, 0, 1)
                 //     }
                 // }
-                light_view_mat.SetLookAt(light_pos, look_at_target, up_vector);
+                light_view_mat = GfMatrix4f().SetLookAt(light_pos, look_at_target, up_vector);
 
                 // 投影矩阵
                 GfFrustum frustum;
