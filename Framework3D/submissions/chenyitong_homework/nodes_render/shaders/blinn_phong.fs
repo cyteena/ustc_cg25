@@ -2,134 +2,171 @@
 
 // Define a uniform struct for lights
 struct Light {
-    // The matrices are used for shadow mapping. You need to fill it according to how we are filling it when building the normal maps (node_render_shadow_mapping.cpp). 
-    // Now, they are filled with identity matrix. You need to modify C++ code innode_render_deferred_lighting.cpp.
-    // Position and color are filled.
-    mat4 light_projection;
-    mat4 light_view;
-    vec3 position;
-    float radius;
-    vec3 color; // Just use the same diffuse and specular color.
-    int shadow_map_id;
+    mat4 light_projection; // Projection matrix from light's perspective
+    mat4 light_view;       // View matrix from light's perspective
+    vec3 position;         // World space position of the light
+    float radius;          // Radius for attenuation calculation
+    vec3 color;            // Light color (used for both diffuse and specular)
+    int shadow_map_id;     // Index for the shadow map texture array layer
 };
 
+// Buffer containing light data
 layout(binding = 0) buffer lightsBuffer {
-Light lights[4];
+    Light lights[]; // Use unsized array for flexibility if needed, but sized is safer if max is known
 };
 
+// Screen resolution
 uniform vec2 iResolution;
 
-uniform sampler2D diffuseColorSampler;
-uniform sampler2D normalMapSampler; // You should apply normal mapping in rasterize_impl.fs
-uniform sampler2D metallicRoughnessSampler;
-uniform sampler2DArray shadow_maps;
-uniform sampler2D position;
+// Input textures from G-Buffer
+uniform sampler2D diffuseColorSampler;      // Albedo / Base Color
+uniform sampler2D normalMapSampler;         // World-space Normal
+uniform sampler2D metallicRoughnessSampler; // Metallic (r) and Roughness (g)
+uniform sampler2D position;                 // World-space Position
 
-// uniform float alpha;
+// Shadow map texture array
+uniform sampler2DArray shadow_maps;
+
+// Camera position in world space
 uniform vec3 camPos;
 
-uniform int light_count;
+// Number of active lights
+uniform int light_count; // Ensure this uniform is correctly set in C++
 
-layout(location = 0) out vec4 Color;
+// Output color
+layout(location = 0) out vec4 FragColor; // Renamed from 'Color' to 'FragColor' (common practice)
 
 void main() {
-vec2 uv = gl_FragCoord.xy / iResolution;
+    // Calculate UV coordinates for sampling G-Buffer textures
+    vec2 uv = gl_FragCoord.xy / iResolution;
 
-vec3 pos = texture2D(position,uv).xyz;
-vec3 normal = texture2D(normalMapSampler,uv).xyz;
+    // --- Sample G-Buffer ---
+    vec3 fragPos = texture(position, uv).xyz;          // Fragment's world position
+    vec3 N = normalize(texture(normalMapSampler, uv).xyz); // Fragment's world normal (ensure it's normalized)
+    vec3 albedo = texture(diffuseColorSampler, uv).rgb; // Fragment's base color
+    vec4 metalnessRoughness = texture(metallicRoughnessSampler, uv);
+    // float metal = metalnessRoughness.r; // Metalness (Not directly used in basic Blinn-Phong)
+    float roughness = metalnessRoughness.g; // Roughness (Used to calculate shininess)
 
-vec4 metalnessRoughness = texture2D(metallicRoughnessSampler,uv);
-float metal = metalnessRoughness.x;
-float roughness = metalnessRoughness.y;
-Color = vec4(0,0,0,1);
-for(int i = 0; i < light_count; i ++) {
+    // Initialize final color to black (ambient light could be added here or separately)
+    vec3 totalLighting = vec3(0.0);
 
-float shadow_map_value = texture(shadow_maps, vec3(uv, lights[i].shadow_map_id)).x;
+    // --- Loop through each light source ---
+    // // Use min to avoid accessing buffer out of bounds if light_count > buffer size
+    // int num_lights_to_process = min(light_count, lights.length());
+    int num_lights_to_process = lights.length();
+    for(int i = 0; i < num_lights_to_process; i++) {
 
-// // Visualization of shadow map
-// Color += vec4(shadow_map_value, 0, 0, 1);
+        // --- Light Properties ---
+        vec3 lightPos = lights[i].position;
+        vec3 lightColor = lights[i].color;
+        float lightRadius = lights[i].radius;
 
-// HW6_TODO: first comment the line above ("Color +=..."). That's for quick Visualization.
-// You should first do the Blinn Phong shading here. You can use roughness to modify alpha. Or you can pass in an alpha value through the uniform above.
+        // --- Blinn-Phong Calculations ---
 
-// 1. 获取材质属性
-vec3 albedo = texture(diffuseColorSampler, uv).rgb; // 获取表面基色
+        // 1. Calculate required vectors
+        vec3 lightDir = normalize(lightPos - fragPos);   // Direction from fragment to light
+        vec3 viewDir = normalize(camPos - fragPos);      // Direction from fragment to camera
+        vec3 halfwayDir = normalize(lightDir + viewDir); // Halfway vector
 
-// 可以根据 roughness (0=光滑, 1=粗糙) 来映射，例如:
-float shininess = mix(256.0, 2.0, roughness * roughness); // 从 2 到 256，粗糙度影响平方关系
+        // 2. Calculate Attenuation based on distance and light radius
+        float distanceToLight = length(lightPos - fragPos);
+        float attenuation = 1.0; // Default: no attenuation
+        if (lightRadius > 0.0) {
+             // Quadratic falloff based on radius (clamped to [0, 1])
+             // Alternative: Inverse square falloff (adjust constants as needed)
+             const float constant = 1.0;
+             const float linear = 0.7;
+             const float quadratic = 1.8;
+             attenuation = 1.0 / (constant + linear * distanceToLight + quadratic * (distanceToLight * distanceToLight));
+            //  attenuation = pow(max(0.0, 1.0 - distanceToLight / lightRadius), 2.0);
 
-// 2. 计算光照所需向量
-vec3 lightDir = normalize(lights[i].position - pos); // 指向光源的方向
-vec3 viewDir = normalize(camPos - pos); // 指向相机的方向
-vec3 halfwayDir = normalize(lightDir + viewDir); // Blinn-Phong 使用的半程向量
-vec3 N = normalize(normal); // 确保法线是归一化的
-
-
-// 3. 计算光照衰减 (可选，但推荐)
-// 可以使用光源半径或距离平方反比等方式
-float distanceToLight = length(lights[i].position - pos);
-// 基于半径的简单二次衰减:
-float attenuation = pow(max(0.0, 1.0 - distanceToLight / lights[i].radius), 2.0);
-// 或者简单的距离平方反比 (调整常数来控制衰减快慢):
-// float attenuation = 1.0 / (1.0 + 0.1 * distanceToLight + 0.05 * distanceToLight * distanceToLight);
-// 如果光源半径为0或负数，则不进行衰减
-if (lights[i].radius <= 0.0) {
-    attenuation = 1.0;
-}
-
-// 5. 计算镜面反射 (Specular)
-// 注意：Blinn-Phong的镜面反射通常用白色或光源颜色，而不是albedo
-// 这里我们用光源颜色作为镜面反射的基础强度
-float spec = pow(max(dot(N, halfwayDir), 0.0), shininess); // (N dot H)^shininess
-vec3 specular = lights[i].color * spec; // * vec3(1.0); // 可以乘以一个镜面反射系数，但简单起见先省略
-
-// --- 阴影映射部分 ---
-
-// 6. 变换片段位置到光源的裁剪空间
-vec4 posLightSpace = lights[i].light_projection * lights[i].light_view * vec4(pos, 1.0);
-
-// 7. 执行透视除法，得到归一化设备坐标 (NDC)，范围[-1, 1]
-vec3 projCoords = posLightSpace.xyz / posLightSpace.w;
-
-// 8. 将NDC坐标变换到纹理坐标范围 [0, 1]
-//  - xy 用于采样阴影贴图
-//  - z  是当前片段在光源视角下的深度值
-vec2 shadowMapUV = projCoords.xy * 0.5 + 0.5;
-float currentDepth = projCoords.z * 0.5 + 0.5; // 将 [-1, 1] 的深度映射到 [0, 1]
-
-// 9. (重要) 阴影偏移/Bias，防止自阴影 (Shadow Acne)
-// 可以是一个小常数，或者基于法线和光线方向计算 slope scale bias
-float bias = max(0.005 * (1.0 - dot(N, lightDir)), 0.0005); // 基于坡度的偏置
-
-// 10. 采样阴影贴图，获取该位置存储的最小深度值 (来自遮挡物)
-// 使用 shadow_map_id 作为纹理数组的层索引
-float shadowMapDepth = texture(shadow_maps, vec3(shadowMapUV, lights[i].shadow_map_id)).r; // 深度图通常存r通道
-
-// 11. 比较深度值，判断是否在阴影中
-// 注意：如果 currentDepth 比 shadowMapDepth 大 (加上 bias)，说明当前片段比遮挡物更远，处于阴影中
-float shadow = 0.0; // 0.0 = 完全光照, 1.0 = 完全阴影
-
-// 检查是否在光源视锥内 (shadowMapUV 在 [0,1] 范围内) 且 比阴影图深度深
-if (shadowMapUV.x > 0.0 && shadowMapUV.x < 1.0 && shadowMapUV.y > 0.0 && shadowMapUV.y < 1.0 && currentDepth > shadowMapDepth + bias) {
-    shadow = 1.0; // 在阴影中
-}
-
-// 12. (可选) PCSS 或 PCF 平滑阴影边缘 (这里先做硬阴影)
-// PCSS/PCF 会在这里用 shadowMapUV 和 bias 进行更复杂的采样和计算
-
-// 13. 结合光照和阴影
-// 只有不在阴影中的部分 (shadow = 0.0) 才接收光照
-vec3 lighting = attenuation * (diffuse + specular) * (1.0 - shadow);
-Color.rgb += lighting;
+        }
+        // Prevent light contribution if fragment is outside radius (for radius-based falloff)
+        if (distanceToLight > lightRadius && lightRadius > 0.0) {
+             attenuation = 0.0;
+        }
 
 
-// --- 阴影映射部分结束 ---
-// --- HW6_TODO 结束 ---
+        // 3. Calculate Diffuse Term (Lambertian)
+        float diffFactor = max(dot(N, lightDir), 0.0);
+        vec3 diffuse = lightColor * albedo * diffFactor;
 
-// After finishing Blinn Phong shading, you can do shadow mapping with the help of the provided shadow_map_value. You will need to refer to the node, node_render_shadow_mapping.cpp, for the light matrices definition. Then you need to fill the mat4 light_projection; mat4 light_view; with similar approach that we fill position and color.
-// For shadow mapping, as is discussed in the course, you should compare the value "position depth from the light's view" against the "blocking object's depth.", then you can decide whether it's shadowed.
+        // 4. Calculate Specular Term (Blinn-Phong)
+        // Map roughness to shininess: low roughness -> high shininess (sharp), high roughness -> low shininess (blurry)
+        // Adjust the range (e.g., 2 to 256) and mapping (e.g., linear, squared) based on desired look
+        float shininess = mix(256.0, 16.0, roughness * roughness); // Example: squared roughness mapping
+        float specFactor = pow(max(dot(N, halfwayDir), 0.0), shininess);
+        // Specular color is typically the light color, possibly modulated by a surface property (Fs, Fresnel - not in basic Blinn-Phong)
+        vec3 specular = lightColor * specFactor; // * vec3(1.0); // Optional specular intensity factor
 
-// PCSS is also applied here.
-}
 
+        // --- Shadow Mapping ---
+
+        float shadow = 0.0; // 0.0 = lit, 1.0 = shadowed
+
+        // 1. Transform fragment position to light's clip space
+        vec4 fragPosLightSpace = lights[i].light_projection * lights[i].light_view * vec4(fragPos, 1.0);
+
+        // 2. Perform perspective divide to get Normalized Device Coordinates (NDC) [-1, 1]
+        vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+
+        // 3. Check if fragment is within the light's frustum [-1, 1] NDC range
+        // If outside, it cannot be lit or shadowed by this light's map, skip shadow check (treat as lit or handle differently)
+        // We add a small epsilon to avoid precision issues at the exact borders
+        if (abs(projCoords.x) <= 1.0 && abs(projCoords.y) <= 1.0 && projCoords.z <= 1.0)
+        {
+             // 4. Convert NDC to shadow map texture coordinates [0, 1]
+            vec2 shadowMapUV = projCoords.xy * 0.5 + 0.5;
+            // Convert NDC depth [-1, 1] to shadow map depth [0, 1]
+            float currentDepth = projCoords.z * 0.5 + 0.5;
+
+            // 5. Calculate shadow bias to prevent shadow acne
+            // Bias increases as the surface is perpendicular to the light (dot(N, lightDir) approaches 0)
+            // Clamp bias to a minimum value. Adjust factors (0.005, 0.0005) as needed.
+            float bias = max(0.05 * (1.0 - dot(N, lightDir)), 0.005); // Increased bias values often needed
+
+             // Ensure we don't sample outside the texture border (though check above helps)
+             // Clamp UVs just in case, or rely on texture border settings (e.g., CLAMP_TO_BORDER with value 1.0)
+             // shadowMapUV = clamp(shadowMapUV, 0.0, 1.0);
+
+
+             // Handle potential perspective aliasing near the far plane. If current depth is very close to 1.0,
+             // it might be behind the far plane representation in the shadow map. Treat as lit maybe?
+             // Or ensure shadow map clear depth is exactly 1.0.
+             if (currentDepth > 1.0) { // If fragment is beyond the light's far plane (after mapping)
+                 shadow = 0.0; // Treat as lit (cannot be shadowed by map content)
+             } else {
+                 // 6. Sample the shadow map
+                 // Use the light's shadow_map_id as the layer index for the texture array
+                 float shadowMapDepth = texture(shadow_maps, vec3(shadowMapUV, lights[i].shadow_map_id)).r;
+
+                 // 7. Compare depths: if fragment is further than the depth in the map (plus bias), it's in shadow
+                 if (shadowMapDepth < 1.0 && currentDepth > shadowMapDepth + bias) { // shadowMapDepth < 1.0 avoids comparing against cleared background
+                    shadow = 1.0; // Fragment is in shadow
+                 }
+                 // else shadow remains 0.0 (lit)
+             }
+        } else {
+             // Fragment is outside the light's view frustum as defined by its matrices.
+             // It shouldn't receive light based on the shadow map projection.
+             // Depending on desired behavior:
+             // Option A: Treat as fully shadowed if outside frustum boundary defined by shadow map
+              shadow = 0.5;
+             // Option B: Treat as fully lit (attenuation will handle distance falloff anyway)
+             // shadow = 0.0;
+             // Option C: Do nothing, attenuation handles it (if attenuation already brought light to 0)
+        }
+
+        // --- Combine Lighting and Shadow ---
+        // Apply attenuation and shadow multiplier
+        // Only add light contribution if not fully shadowed (shadow = 0.0)
+        totalLighting += attenuation * (diffuse + specular) * (1.0 - shadow);
+    }
+
+    // --- Final Color Output ---
+    // Add ambient term here if needed: totalLighting += ambientColor * albedo;
+    vec3 ambientColor = vec3(1.0);
+    totalLighting += ambientColor * albedo;
+    FragColor = vec4(totalLighting, 0.8); // Set alpha to 1.0 for opaque
 }

@@ -9,8 +9,16 @@
 #include "render_node_base.h"
 #include "rich_type_buffer.hpp"
 #include "utils/draw_fullscreen.h"
+#include <vector> // Add include for std::vector
+
+
 NODE_DEF_OPEN_SCOPE
 
+// Define LightMatrixInfo struct here, inside the function scope, before use.
+struct LightMatrixInfo {
+    GfMatrix4f viewMatrix;
+    GfMatrix4f projectionMatrix;
+};
 NODE_DECLARATION_FUNCTION(deferred_lighting)
 {
     b.add_input<TextureHandle>("Position");
@@ -18,20 +26,34 @@ NODE_DECLARATION_FUNCTION(deferred_lighting)
     b.add_input<TextureHandle>("MetallicRoughness");
     b.add_input<TextureHandle>("Normal");
     b.add_input<TextureHandle>("Shadow Maps");
+    // Add input for the light matrices calculated by the shadow mapping node
+    b.add_input<std::vector<LightMatrixInfo>>("Light Matrices");
 
     b.add_input<std::string>("Lighting Shader")
         .default_val("shaders/blinn_phong.fs");
     b.add_output<TextureHandle>("Color");
 }
 
+
+// IMPORTANT: This struct MUST match the layout of the 'Light' struct in the GLSL shader (blinn_phong.fs / pcss.fs)
+// Added lightWorldSize for PCSS compatibility. Ensure GLSL struct also has it in the same order.
+// Added padding for vec3 alignment if needed, check std140/std430 layout rules.
 struct LightInfo {
-    GfMatrix4f light_projection;
-    GfMatrix4f light_view;
-    GfVec3f position;
-    float radius;
-    GfVec3f luminance;
-    int shadow_map_id;
+    GfMatrix4f light_projection; // mat4: 16 floats = 64 bytes
+    GfMatrix4f light_view;       // mat4: 16 floats = 64 bytes
+    GfVec3f position;         // vec3: 3 floats = 12 bytes
+    float radius;              // float: 1 float = 4 bytes -> Needs padding for vec3 below if using std140
+    GfVec3f luminance;        // vec3: 3 floats = 12 bytes (corresponds to 'color' in GLSL)
+    int shadow_map_id;         // int: 1 int = 4 bytes -> Needs padding for float below
+    float lightWorldSize;      // float: 1 float = 4 bytes (Required by pcss.fs)
+    // Consider adding explicit padding if strict alignment (like std140) is required by the buffer type (UBO vs SSBO)
+    // SSBO (layout std430) is generally more flexible with vec3 alignment, but check documentation.
+    // Example padding for std140 (vec3 needs 16-byte alignment):
+    // float _padding1; // after position
+    // float _padding2; // after luminance
+    // vec2 _padding3; // after shadow_map_id
 };
+
 
 NODE_EXECUTION_FUNCTION(deferred_lighting)
 {
@@ -45,6 +67,9 @@ NODE_EXECUTION_FUNCTION(deferred_lighting)
     auto normal_texture = params.get_input<TextureHandle>("Normal");
 
     auto shadow_maps = params.get_input<TextureHandle>("Shadow Maps");
+    // Get the light matrices from the input
+    auto light_matrices = params.get_input<std::vector<LightMatrixInfo>>("Light Matrices");
+
 
     Hd_USTC_CG_Camera* free_camera = get_free_camera(params);
     // Creating output textures.
@@ -122,13 +147,39 @@ NODE_EXECUTION_FUNCTION(deferred_lighting)
             auto position4 = light_params.GetPosition();
             pxr::GfVec3f position3(position4[0], position4[1], position4[2]);
 
-            if (lights[i]->Get(HdLightTokens->radius).IsHolding<float>()) {
-                auto radius =
-                    lights[i]->Get(HdLightTokens->radius).Get<float>();
-
-                light_vector.emplace_back(
-                    GfMatrix4f(), GfMatrix4f(), position3, 0.f, diffuse3, i);
+            // Get the correct matrices for this light from the input vector
+            // Ensure the light_matrices vector has an entry for this index 'i'
+            GfMatrix4f light_projection_mat = GfMatrix4f(1.0); // Default to identity
+            GfMatrix4f light_view_mat = GfMatrix4f(1.0);       // Default to identity
+            if (i < light_matrices.size()) {
+                light_projection_mat = light_matrices[i].projectionMatrix;
+                light_view_mat = light_matrices[i].viewMatrix;
+            } else {
+                // Log a warning or handle error: Mismatch between lights and matrices count
+                TF_WARN("Mismatch in light count and received light matrices count at index %d.", i);
             }
+
+
+            float radius = 0.f;
+            if (lights[i]->Get(HdLightTokens->radius).IsHolding<float>()) {
+                 radius = lights[i]->Get(HdLightTokens->radius).Get<float>();
+            }
+
+            // Define a world size for the light source (Needed for PCSS)
+            // This is a placeholder value and should ideally be configurable per light or based on light type/size.
+            // For sphere lights, it could relate to the radius, but needs careful consideration.
+            float lightWorldSize = 0.5f; // Example value - TUNE THIS! Could fetch from USD attribute if available.
+
+            light_vector.emplace_back(
+                light_projection_mat, // Use the correct matrix
+                light_view_mat,       // Use the correct matrix
+                position3,
+                radius,               // Use the fetched radius, not 0.f
+                diffuse3,
+                i,
+                lightWorldSize        // Add the world size
+            );
+
 
             // You can add directional light here, and also the corresponding
             // shadow map calculation part.
