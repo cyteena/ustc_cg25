@@ -8,6 +8,7 @@ struct Light {
     float radius;          // Radius for attenuation calculation
     vec3 color;            // Light color (used for both diffuse and specular)
     int shadow_map_id;     // Index for the shadow map texture array layer
+    float lightWorldSize;
 };
 
 // Buffer containing light data
@@ -50,11 +51,7 @@ void main() {
 
     // Initialize final color to black (ambient light could be added here or separately)
     vec3 totalLighting = vec3(0.0);
-
-    // --- Loop through each light source ---
-    // // Use min to avoid accessing buffer out of bounds if light_count > buffer size
-    // int num_lights_to_process = min(light_count, lights.length());
-    int num_lights_to_process = lights.length();
+    int num_lights_to_process = light_count;
     for(int i = 0; i < num_lights_to_process; i++) {
 
         // --- Light Properties ---
@@ -76,15 +73,10 @@ void main() {
              // Quadratic falloff based on radius (clamped to [0, 1])
              // Alternative: Inverse square falloff (adjust constants as needed)
              const float constant = 1.0;
-             const float linear = 0.7;
-             const float quadratic = 1.8;
+             const float linear = 0.05;
+             const float quadratic = 0.05;
              attenuation = 1.0 / (constant + linear * distanceToLight + quadratic * (distanceToLight * distanceToLight));
             //  attenuation = pow(max(0.0, 1.0 - distanceToLight / lightRadius), 2.0);
-
-        }
-        // Prevent light contribution if fragment is outside radius (for radius-based falloff)
-        if (distanceToLight > lightRadius && lightRadius > 0.0) {
-             attenuation = 0.0;
         }
 
 
@@ -95,7 +87,7 @@ void main() {
         // 4. Calculate Specular Term (Blinn-Phong)
         // Map roughness to shininess: low roughness -> high shininess (sharp), high roughness -> low shininess (blurry)
         // Adjust the range (e.g., 2 to 256) and mapping (e.g., linear, squared) based on desired look
-        float shininess = mix(256.0, 16.0, roughness * roughness); // Example: squared roughness mapping
+        float shininess = mix(256.0, 32.0, roughness * roughness); // Example: squared roughness mapping
         float specFactor = pow(max(dot(N, halfwayDir), 0.0), shininess);
         // Specular color is typically the light color, possibly modulated by a surface property (Fs, Fresnel - not in basic Blinn-Phong)
         vec3 specular = lightColor * specFactor; // * vec3(1.0); // Optional specular intensity factor
@@ -128,7 +120,7 @@ void main() {
 
              // Ensure we don't sample outside the texture border (though check above helps)
              // Clamp UVs just in case, or rely on texture border settings (e.g., CLAMP_TO_BORDER with value 1.0)
-             // shadowMapUV = clamp(shadowMapUV, 0.0, 1.0);
+            shadowMapUV = clamp(shadowMapUV, 0.0, 1.0);
 
 
              // Handle potential perspective aliasing near the far plane. If current depth is very close to 1.0,
@@ -143,30 +135,21 @@ void main() {
 
                  // 7. Compare depths: if fragment is further than the depth in the map (plus bias), it's in shadow
                  if (shadowMapDepth < 1.0 && currentDepth > shadowMapDepth + bias) { // shadowMapDepth < 1.0 avoids comparing against cleared background
-                    shadow = 1.0; // Fragment is in shadow
+                    shadow = 0.5; // Fragment is in shadow
                  }
                  // else shadow remains 0.0 (lit)
              }
-        } else {
-             // Fragment is outside the light's view frustum as defined by its matrices.
-             // It shouldn't receive light based on the shadow map projection.
-             // Depending on desired behavior:
-             // Option A: Treat as fully shadowed if outside frustum boundary defined by shadow map
-              shadow = 0.5;
-             // Option B: Treat as fully lit (attenuation will handle distance falloff anyway)
-             // shadow = 0.0;
-             // Option C: Do nothing, attenuation handles it (if attenuation already brought light to 0)
         }
 
         // --- Combine Lighting and Shadow ---
         // Apply attenuation and shadow multiplier
         // Only add light contribution if not fully shadowed (shadow = 0.0)
-        totalLighting += attenuation * (diffuse + specular) * (1.0 - shadow);
+        totalLighting += attenuation * (diffuse + specular) * 1.0;
     }
 
     // --- Final Color Output ---
     // Add ambient term here if needed: totalLighting += ambientColor * albedo;
-    vec3 ambientColor = vec3(1.0);
+    vec3 ambientColor = vec3(0.5);
     totalLighting += ambientColor * albedo;
-    FragColor = vec4(totalLighting, 0.8); // Set alpha to 1.0 for opaque
+    FragColor = vec4(totalLighting, 1.0); // Set alpha to 1.0 for opaque
 }

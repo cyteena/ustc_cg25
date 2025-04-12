@@ -137,6 +137,8 @@ NODE_EXECUTION_FUNCTION(deferred_lighting)
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, lightBuffer);
     glViewport(0, 0, size[0], size[1]);
     std::vector<LightInfo> light_vector;
+    // 用于索引shadow_maps和light_matrices
+    int shadow_casting_light_index = 0;
 
     for (int i = 0; i < lights.size(); ++i) {
         if (!lights[i]->GetId().IsEmpty()&& lights[i]->GetLightType() ==  HdPrimTypeTokens->sphereLight) {
@@ -151,12 +153,15 @@ NODE_EXECUTION_FUNCTION(deferred_lighting)
             // Ensure the light_matrices vector has an entry for this index 'i'
             GfMatrix4f light_projection_mat = GfMatrix4f(1.0); // Default to identity
             GfMatrix4f light_view_mat = GfMatrix4f(1.0);       // Default to identity
-            if (i < light_matrices.size()) {
-                light_projection_mat = light_matrices[i].projectionMatrix;
-                light_view_mat = light_matrices[i].viewMatrix;
+            if (shadow_casting_light_index < light_matrices.size()) {
+                light_projection_mat = light_matrices[shadow_casting_light_index].projectionMatrix;
+                light_view_mat = light_matrices[shadow_casting_light_index].viewMatrix;
             } else {
                 // Log a warning or handle error: Mismatch between lights and matrices count
-                TF_WARN("Mismatch in light count and received light matrices count at index %d.", i);
+                TF_WARN("Mismatch between processed sphere lights and received light matrices count. "
+                    "Expected matrix for light index %d (shadow index %d), but only %zu matrices received.",
+                    i, shadow_casting_light_index, light_matrices.size());
+                continue;
             }
 
 
@@ -176,9 +181,11 @@ NODE_EXECUTION_FUNCTION(deferred_lighting)
                 position3,
                 radius,               // Use the fetched radius, not 0.f
                 diffuse3,
-                i,
+                shadow_casting_light_index,
                 lightWorldSize        // Add the world size
             );
+
+            shadow_casting_light_index++;
 
 
             // You can add directional light here, and also the corresponding
