@@ -137,6 +137,7 @@ NODE_EXECUTION_FUNCTION(deferred_lighting)
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, lightBuffer);
     glViewport(0, 0, size[0], size[1]);
     std::vector<LightInfo> light_vector;
+    light_vector.reserve(lights.size());
     // 用于索引shadow_maps和light_matrices
     int shadow_casting_light_index = 0;
 
@@ -148,19 +149,21 @@ NODE_EXECUTION_FUNCTION(deferred_lighting)
             pxr::GfVec3f diffuse3(diffuse4[0], diffuse4[1], diffuse4[2]);
             auto position4 = light_params.GetPosition();
             pxr::GfVec3f position3(position4[0], position4[1], position4[2]);
+            TfToken light_type = lights[i]->GetLightType();
+            int shadow_map_id = -1;
 
             // Get the correct matrices for this light from the input vector
             // Ensure the light_matrices vector has an entry for this index 'i'
             GfMatrix4f light_projection_mat = GfMatrix4f(1.0); // Default to identity
             GfMatrix4f light_view_mat = GfMatrix4f(1.0);       // Default to identity
-            if (shadow_casting_light_index < light_matrices.size()) {
-                light_projection_mat = light_matrices[shadow_casting_light_index].projectionMatrix;
-                light_view_mat = light_matrices[shadow_casting_light_index].viewMatrix;
+            if (i < light_matrices.size()) {
+                light_projection_mat = light_matrices[i].projectionMatrix;
+                light_view_mat = light_matrices[i].viewMatrix;
+                shadow_map_id = i;
             } else {
                 // Log a warning or handle error: Mismatch between lights and matrices count
-                TF_WARN("Mismatch between processed sphere lights and received light matrices count. "
-                    "Expected matrix for light index %d (shadow index %d), but only %zu matrices received.",
-                    i, shadow_casting_light_index, light_matrices.size());
+                TF_WARN("Mismatch: Light index %d expects shadow matrices, but only %zu matrices received. Disabling shadow for this light.",
+                    i, light_matrices.size());
                 continue;
             }
 
@@ -181,11 +184,9 @@ NODE_EXECUTION_FUNCTION(deferred_lighting)
                 position3,
                 radius,               // Use the fetched radius, not 0.f
                 diffuse3,
-                shadow_casting_light_index,
+                shadow_map_id,
                 lightWorldSize        // Add the world size
             );
-
-            shadow_casting_light_index++;
 
 
             // You can add directional light here, and also the corresponding

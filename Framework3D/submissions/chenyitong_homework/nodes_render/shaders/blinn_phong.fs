@@ -135,7 +135,7 @@ void main() {
 
                  // 7. Compare depths: if fragment is further than the depth in the map (plus bias), it's in shadow
                  if (shadowMapDepth < 1.0 && currentDepth > shadowMapDepth + bias) { // shadowMapDepth < 1.0 avoids comparing against cleared background
-                    shadow = 0.5; // Fragment is in shadow
+                    shadow = 0.8; // Fragment is in shadow
                  }
                  // else shadow remains 0.0 (lit)
              }
@@ -144,7 +144,7 @@ void main() {
         // --- Combine Lighting and Shadow ---
         // Apply attenuation and shadow multiplier
         // Only add light contribution if not fully shadowed (shadow = 0.0)
-        totalLighting += attenuation * (diffuse + specular) * 1.0;
+        totalLighting += attenuation * (diffuse + specular) * (1 - shadow);
     }
 
     // --- Final Color Output ---
