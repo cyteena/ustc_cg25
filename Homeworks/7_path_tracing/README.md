@@ -4,6 +4,8 @@
 > - 查看[文档](./rtfd.pdf)
 > - 在[项目目录](../../Framework3D/)中编写作业代码
 > - 按照[作业规范](../README.md)提交作业
+## **ATTENTION**!!!!
+本次作业的编写需要大家直接在框架里面进行修改。具体而言是修改`Framework3D\Framework3D\source\Plugins\hd_USTC_CG_Embree`下的相应内容。这个文件夹里面所有东西你都是可以进行修改的，提交的时候需要提交整个文件夹！
 
 ## 作业递交
 
