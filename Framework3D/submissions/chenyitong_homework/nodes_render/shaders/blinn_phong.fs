@@ -149,7 +149,7 @@ void main() {
 
     // --- Final Color Output ---
     // Add ambient term here if needed: totalLighting += ambientColor * albedo;
-    vec3 ambientColor = vec3(0.5);
+    vec3 ambientColor = vec3(0.4);
     totalLighting += ambientColor * albedo;
     FragColor = vec4(totalLighting, 1.0); // Set alpha to 1.0 for opaque
 }
